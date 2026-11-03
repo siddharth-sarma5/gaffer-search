@@ -76,7 +76,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 12. `feat(text): add UTF-8 aware tokenizer with ASCII folding`
 - [x] 13. `feat(text): add stopword filter, S-stemmer and Analyzer pipeline`
 - [x] 14. `feat(index): add in-memory inverted index with collection statistics`
-- [ ] 15. `feat(ranking): add BM25 scorer`
+- [x] 15. `feat(ranking): add BM25 scorer`
 - [ ] 16. `feat(query): add term-at-a-time evaluation with bounded min-heap top-k`
 - [ ] 17. `feat(cli): add gaffer CLI with index and search commands and themed output`
 - [ ] 18. `test: add end-to-end golden query tests on a fixture corpus`

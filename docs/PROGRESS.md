@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(index): add in-memory inverted index with collection statistics`.
+- **Last commit:** `feat(ranking): add BM25 scorer`.
 
 ## Next step
-- M1-15: BM25 scorer.
+- M1-16: term-at-a-time evaluation with bounded min-heap top-k.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

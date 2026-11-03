@@ -5,6 +5,7 @@ add_library(gaffer_core STATIC
   corpus/corpus.cpp
   corpus/document.cpp
   index/inverted_index.cpp
+  ranking/bm25.cpp
   text/analyzer.cpp
   text/ascii_fold.cpp
   text/stemmer.cpp
