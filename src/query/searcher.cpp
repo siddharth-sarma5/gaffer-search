@@ -240,4 +240,54 @@ void Searcher::search_with_phrases(SearchResult& result, TopK& top) const {
   }
 }
 
+ranking::Explanation Searcher::explain(const SearchResult& result, DocId doc) const {
+  ranking::Explanation ex;
+  ex.doc = doc;
+  ex.doc_length = index_->doc_length(doc);
+  ex.avg_doc_length = index_->stats().avg_doc_length();
+
+  // Same order as search(): phrases first (only present in phrase mode), then free terms.
+  std::vector<std::span<const std::uint32_t>> positions;
+  for (const QueryPhrase& ph : result.phrases) {
+    ranking::Contribution c;
+    c.is_phrase = true;
+    c.idf = ph.idf;
+    std::vector<PostingCursor> cursors;
+    cursors.reserve(ph.terms.size());
+    positions.clear();
+    bool all_present = true;
+    for (const auto& term : ph.terms) {
+      c.label += (c.label.empty() ? "" : " ") + term;
+      cursors.emplace_back(index_->posting_list(term));
+      cursors.back().advance_to(doc);
+      all_present = all_present && cursors.back().doc() == doc;
+    }
+    if (all_present) {
+      for (const auto& cur : cursors) {
+        positions.push_back(cur.positions());
+      }
+      c.tf = count_phrase_matches(positions, ph.offsets);
+    }
+    if (c.tf > 0) {
+      c.score = bm25_.score(c.idf, c.tf, ex.doc_length);
+    }
+    ex.total += c.score;
+    ex.parts.push_back(std::move(c));
+  }
+  for (const QueryTerm& qt : result.terms) {
+    ranking::Contribution c{qt.term, false,  qt.expanded_from,
+                            0,       qt.idf, static_cast<double>(qt.query_tf) * qt.weight,
+                            0.0};
+    PostingCursor cur(index_->posting_list(qt.term));
+    cur.advance_to(doc);
+    if (cur.doc() == doc) {
+      c.tf = cur.tf();
+      c.score = c.weight * bm25_.score(qt.idf, c.tf, ex.doc_length);
+      ex.total += c.score;
+    }
+    ex.parts.push_back(std::move(c));
+  }
+  return ex;
+}
+
 }  // namespace gaffer::query

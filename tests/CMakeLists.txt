@@ -71,3 +71,8 @@ add_test(NAME cli.nickname_expansion
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_tests_properties(cli.nickname_expansion PROPERTIES LABELS cli
   PASS_REGULAR_EXPRESSION "arsenal \\(df [0-9]+, from \"gunners\" x0.7\\)")
+add_test(NAME cli.var_review
+  COMMAND gaffer search "late winner at anfield" -k 1 --var
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(cli.var_review PROPERTIES LABELS cli
+  PASS_REGULAR_EXPRESSION "VAR review.*anfield +tf +[0-9]+ +idf.*total")

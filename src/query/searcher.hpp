@@ -6,11 +6,13 @@
 #include <string_view>
 #include <vector>
 
+#include "common/types.hpp"
 #include "index/inverted_index.hpp"
 #include "query/nicknames.hpp"
 #include "query/query_parser.hpp"
 #include "query/top_k.hpp"
 #include "ranking/bm25.hpp"
+#include "ranking/explanation.hpp"
 #include "text/analyzer.hpp"
 
 namespace gaffer::query {
@@ -80,6 +82,12 @@ class Searcher {
                     const NicknameExpander* expander = nullptr);
 
   [[nodiscard]] SearchResult search(std::string_view query, std::size_t k) const;
+
+  // "VAR review": recomputes `doc`'s score for the query in `result`, one term
+  // or phrase at a time. Contributions are summed in the same order search()
+  // uses, so explanation.total == the ranked score exactly. Terms that don't
+  // occur in the doc are listed with tf 0 and score 0.
+  [[nodiscard]] ranking::Explanation explain(const SearchResult& result, DocId doc) const;
 
   // The analysed, de-duplicated free-word terms of a query (phrases excluded),
   // with df and idf filled in.

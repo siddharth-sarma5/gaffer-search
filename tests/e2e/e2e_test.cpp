@@ -146,6 +146,30 @@ TEST_F(RealCorpusTest, NicknameExpansionFindsTheClub) {
   }
 }
 
+// VAR review invariant: an explanation's parts sum to the ranked score exactly
+// (bitwise ==, not approximately), across OR queries, phrases and expansions.
+TEST_F(RealCorpusTest, VarReviewReproducesRankedScoresExactly) {
+  const auto expander = query::NicknameExpander::load_tsv_file("data/nicknames.tsv");
+  const query::Searcher s(engine_->index, {}, &expander);
+  for (const std::string q :
+       {"late winner at anfield", "gunners \"late winner\"", "\"north london derby\" arsenal",
+        "haaland brace", "red devils comeback", "salah salah penalty", "\"stadium of light\""}) {
+    const auto r = s.search(q, 10);
+    ASSERT_FALSE(r.hits.empty()) << q;
+    for (const auto& hit : r.hits) {
+      const auto ex = s.explain(r, hit.doc);
+      EXPECT_EQ(ex.total, hit.score) << q << " doc " << hit.doc;
+      double sum = 0.0;
+      for (const auto& part : ex.parts) {
+        EXPECT_EQ(part.tf == 0, part.score == 0.0) << q;
+        sum += part.score;
+      }
+      EXPECT_EQ(sum, hit.score) << q;
+      EXPECT_EQ(ex.parts.size(), r.phrases.size() + r.terms.size()) << q;
+    }
+  }
+}
+
 // Queries covering every document type and the main derived tags.
 const std::vector<std::string> kGoldenQueries{
     "late winner at anfield",

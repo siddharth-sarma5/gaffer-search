@@ -4,11 +4,11 @@
 then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
-- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batches 1-2 (M2-1..10) done; waiting for Sid before batch 3 (M2-11..15). M1 done (19/19).
-- **Last commit:** `feat(query): expand club nicknames with down-weighted synonym terms`.
+- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 3 (M2-11..15) in progress (Sid: do the rest of the milestone). M1 done (19/19).
+- **Last commit:** `feat(ranking): add VAR review per-term score explanations`.
 
 ## Next step
-- Sid reviews M2 batch 2 (commits 6-10); batch 3 starts at M2-11 (VAR review explanations).
+- M2-12: results-only historical seasons for the scale corpus.
 
 ## Open questions
 - None right now.

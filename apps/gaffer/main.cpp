@@ -14,6 +14,7 @@
 //   --keep-stopwords   index stopwords too
 //   --nicknames PATH   club nickname file (default data/nicknames.tsv, if present)
 //   --no-expand        don't expand nicknames ("gunners" -> Arsenal)
+//   --var              "VAR review": explain each result's score term by term
 //
 // Exit codes: 0 ok, 1 runtime error (bad corpus file...), 2 usage error.
 
@@ -58,6 +59,7 @@ struct Options {
   std::string nicknames_path{kDefaultNicknames};
   bool nicknames_explicit = false;  // a missing file is only an error if the user named it
   bool expand = true;
+  bool var = false;  // --var: per-term score breakdown ("VAR review")
   std::optional<std::string> query;
   std::size_t k = 10;
   gaffer::ranking::Bm25Params bm25;
@@ -72,7 +74,8 @@ class UsageError : public gaffer::Error {
 constexpr std::string_view kUsage =
     "usage: gaffer index  [--corpus PATH] [--out INDEX] [--no-stem] [--keep-stopwords]\n"
     "       gaffer search [--corpus PATH] [--index INDEX] [-k N] [--k1 X] [--b X] [--no-stem]\n"
-    "                     [--keep-stopwords] [--nicknames PATH] [--no-expand] [\"query\"]\n";
+    "                     [--keep-stopwords] [--nicknames PATH] [--no-expand] [--var]\n"
+    "                     [\"query\"]\n";
 
 double parse_double(std::string_view flag, const std::string& value) {
   try {
@@ -126,6 +129,8 @@ Options parse_args(const std::vector<std::string>& args) {
     } else if (a == "--nicknames" && opt.command == "search") {
       opt.nicknames_path = value();
       opt.nicknames_explicit = true;
+    } else if (a == "--var" && opt.command == "search") {
+      opt.var = true;
     } else if (a == "--no-expand" && opt.command == "search") {
       opt.expand = false;
     } else if (a == "-k") {
@@ -167,9 +172,28 @@ Markers markers() {
   return {"**", "**"};
 }
 
+// The VAR review: every term's tf, idf, weight and BM25 contribution, summed.
+void print_var_review(const gaffer::ranking::Explanation& ex) {
+  std::cout << std::format("     VAR review (doc length {}, average {:.1f}):\n", ex.doc_length,
+                           ex.avg_doc_length);
+  for (const auto& c : ex.parts) {
+    std::string label = c.is_phrase ? std::format("\"{}\"", c.label) : c.label;
+    if (!c.expanded_from.empty()) {
+      label += std::format(" (from {})", c.expanded_from);
+    }
+    if (c.tf == 0) {
+      std::cout << std::format("       {:<34} not in this document\n", label);
+      continue;
+    }
+    std::cout << std::format("       {:<34} tf {:>2}  idf {:5.2f}  x{:.1f}  -> {:7.3f}\n", label,
+                             c.tf, c.idf, c.weight, c.score);
+  }
+  std::cout << std::format("       {:<34} {:>32} {:7.3f}\n", "", "total", ex.total);
+}
+
 void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::text::Analyzer& analyzer,
-                   const gaffer::query::SearchResult& r, std::string_view query,
-                   double elapsed_ms) {
+                   const gaffer::query::Searcher& searcher, const gaffer::query::SearchResult& r,
+                   std::string_view query, double elapsed_ms, bool var) {
   std::cout << std::format("\nAsk the Gaffer: \"{}\"\n", query);
   std::string terms;
   for (const auto& ph : r.phrases) {
@@ -202,6 +226,9 @@ void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::text::Ana
                              gaffer::corpus::to_string(doc.type));
     const auto snip = gaffer::snippet::make_snippet(doc.body, analyzer, highlight);
     std::cout << std::format("     {}\n", gaffer::snippet::render(snip, mark.open, mark.close));
+    if (var) {
+      print_var_review(searcher.explain(r, hit.doc));
+    }
   }
   std::cout << std::format("\nFull-time: {} of {} matching documents in {:.2f} ms\n", r.hits.size(),
                            r.matched, elapsed_ms);
@@ -265,7 +292,8 @@ int run(const Options& opt) {
   auto answer = [&](std::string_view q) {
     const auto t0 = Clock::now();
     const auto result = searcher.search(q, opt.k);
-    print_results(corpus, analyzer, result, q, ms_since(t0));
+    const double elapsed = ms_since(t0);  // search time only, not printing or VAR
+    print_results(corpus, analyzer, searcher, result, q, elapsed, opt.var);
   };
 
   if (opt.query) {
@@ -297,6 +325,9 @@ int main(int argc, char** argv) {
     return 2;
   } catch (const gaffer::Error& e) {
     std::cerr << "gaffer: " << e.what() << "\n";
+    return 1;
+  } catch (const std::exception& e) {  // bad_alloc, format_error, ...: report, don't abort
+    std::cerr << "gaffer: internal error: " << e.what() << "\n";
     return 1;
   }
 }
