@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 3 (M2-11..15) in progress (Sid: do the rest of the milestone). M1 done (19/19).
-- **Last commit:** `feat(ranking): add VAR review per-term score explanations`.
+- **Last commit:** `feat(corpusgen): add results-only historical seasons for the scale corpus`.
 
 ## Next step
-- M2-12: results-only historical seasons for the scale corpus.
+- M2-13: gaffer-bench (indexing throughput, latency percentiles, index size).
 
 ## Open questions
 - None right now.

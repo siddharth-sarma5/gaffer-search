@@ -51,6 +51,12 @@ jobs:
             --input ../../data/raw/openfootball/2025-26/1-premierleague-full.txt \
             --output /tmp/pl-2025-26.tsv
           cmp /tmp/pl-2025-26.tsv ../../data/corpus/pl-2025-26.tsv
+          python -m corpusgen.history \
+            --input-dir ../../data/raw/openfootball/history --output /tmp/pl-history.tsv
+          cmp /tmp/pl-history.tsv ../../data/corpus/pl-history.tsv
+      - name: Vendored history files match their checksums
+        working-directory: data/raw/openfootball/history
+        run: sha256sum --check --quiet SHA256SUMS
 
   lint:
     name: clang-format / clang-tidy
