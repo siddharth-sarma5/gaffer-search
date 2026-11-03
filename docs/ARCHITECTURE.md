@@ -1,6 +1,6 @@
 # Architecture
 
-*Status: Milestone 1 built (2026-11-02). Parts marked **(M2)** or **(M3)** are planned, not built.
+*Status: Milestones 1 and 2 built (2026-11-03). Parts marked **(M3)** are planned, not built.
 These diagrams are updated whenever the design changes.*
 
 ## 1. System context
@@ -28,7 +28,7 @@ flowchart LR
 flowchart TB
     subgraph apps[apps/]
         cli["gaffer CLI<br/>index · search · --var"]
-        bench["gaffer-bench (M2)"]
+        bench["gaffer-bench · gaffer-eval"]
         shard["gaffer-shard (M3)"]
         broker["gaffer-broker (M3)"]
     end
@@ -36,16 +36,17 @@ flowchart TB
     subgraph core["src/ — library: gaffer_core"]
         corpusm["corpus/<br/>Document · TsvLoader"]
         text["text/<br/>Tokenizer · AsciiFold · Stopwords · SStemmer · Analyzer"]
-        index["index/<br/>InvertedIndex · Postings · IndexBuilder<br/>Varint · Delta · IndexFile (M2)"]
-        ranking["ranking/<br/>Bm25 · Explanation (M2)"]
-        query["query/<br/>Searcher (TAAT; DAAT in M2) · TopK<br/>QueryParser (M2) · NicknameExpander (M2)"]
-        snippet["snippet/<br/>Snippeter (M2)"]
+        index["index/<br/>InvertedIndex · PostingList · PostingCursor<br/>IndexBuilder · varint · postings codec · index file"]
+        ranking["ranking/<br/>Bm25 · Explanation"]
+        query["query/<br/>Searcher (DAAT) · TopK · phrase matching<br/>query parser · NicknameExpander"]
+        snippet["snippet/<br/>make_snippet · render"]
+        evalm["eval/<br/>precision@k · recall@k · MRR"]
         net["net/ (M3)<br/>Socket · Framing · Codec"]
         server["server/ (M3)<br/>ShardServer · Broker · GlobalStats"]
     end
 
     cli --> corpusm & index & query & snippet
-    bench --> index & query
+    bench --> index & query & evalm
     shard --> server
     broker --> server
     server --> net & query & index
@@ -61,6 +62,8 @@ the project, so each module can be unit-tested in isolation.
 
 ```mermaid
 flowchart LR
+    hist[33 results-only seasons] --> hparse[corpusgen.history:<br/>3 layouts, round-robin check]
+    hparse --> htsv[(pl-history.tsv)]
     raw[1-premierleague-full.txt] --> parse[corpusgen: parse match blocks]
     parse --> derive[derive tags<br/>late winner · comeback · hat-trick ·<br/>clean sheet · derby · red card]
     derive --> write[write docs<br/>match · club · player]
@@ -68,8 +71,9 @@ flowchart LR
     tsv --> load[TsvLoader<br/>→ Document]
     load --> analyze[Analyzer<br/>tokenize → fold → stop → stem]
     analyze --> build[IndexBuilder<br/>term → postings<br/>doc lengths, N, avgdl]
-    build --> mem[(In-memory index)]
-    mem -- M2: delta + varint, CRC32 --> file[(index.gaffer)]
+    build --> mem[(In-memory index<br/>postings + positions)]
+    mem -- delta + varint, CRC-32 --> file[(index file)]
+    file -- validate + decode --> mem
     file -- M3: partition by doc --> shards[(shard_0..N-1)]
 ```
 
@@ -79,13 +83,13 @@ flowchart LR
 sequenceDiagram
     actor U as User
     participant C as gaffer CLI
-    participant P as QueryParser (M2)
+    participant P as parse_query
     participant A as Analyzer
-    participant X as NicknameExpander (M2)
+    participant X as NicknameExpander
     participant E as Searcher
     participant I as InvertedIndex
     participant B as Bm25
-    participant S as Snippeter (M2)
+    participant S as make_snippet
 
     U->>C: search "gunners late winner"
     C->>P: parse (terms, "phrases")
@@ -93,8 +97,9 @@ sequenceDiagram
     A-->>X: [gunners, late, winner]
     X-->>E: [arsenal(w=0.7), gunners, late, winner]
     E->>I: postings for each term
-    loop each candidate doc (TAAT in M1, DAAT in M2)
-        E->>B: score(tf, df, dl, avgdl)
+    loop each candidate doc (DAAT: min doc across cursors, or leapfrog for phrases)
+        E->>E: phrase check on positions (count_phrase_matches)
+        E->>B: score(idf, tf, doc length)
         B-->>E: per-term contributions
         E->>E: push into size-k min-heap
     end
@@ -127,21 +132,26 @@ sequenceDiagram
     BR-->>U: top-k, partial=true, missing=[N-1]
 ```
 
-## 6. As built in M1
+## 6. As built (M1 + M2)
 
 | Module | Files | Key types / functions |
 |--------|-------|-----------------------|
-| common | `src/common/` | `gaffer::Error`, `IoError`, `ParseError`; `DocId` (uint32) |
-| corpus | `src/corpus/` | `Document`, `Corpus`, `load_tsv`, `unescape_field` |
+| common | `src/common/` | `gaffer::Error`, `IoError`, `ParseError`, `FormatError`; `DocId`; `crc32` |
+| corpus | `src/corpus/` | `Document`, `Corpus`, `load_tsv(_file/_files)`, `fingerprint` |
 | text | `src/text/` | `decode_utf8`, `fold_code_point`, `tokenize`, `is_stopword`, `s_stem`, `Analyzer` |
-| index | `src/index/` | `Posting`, `CollectionStats`, `InvertedIndex`, `IndexBuilder`, `build_index` |
-| ranking | `src/ranking/` | `Bm25Params`, `Bm25::idf`, `Bm25::score` |
-| query | `src/query/` | `ScoredDoc`, `ranks_before`, `TopK`, `Searcher::search` |
-| CLI | `apps/gaffer/` | `gaffer index`, `gaffer search` |
-| corpus generator | `tools/corpusgen/` | `parse_file`, `derive`, `render_match`, `render_clubs`, `render_players` |
+| index | `src/index/` | `PostingList`, `InvertedIndex`, `IndexBuilder`, `PostingCursor::advance_to`, `put_varint`/`VarintReader`, `encode/decode_posting_list`, `serialize_index`/`deserialize_index` |
+| ranking | `src/ranking/` | `Bm25`, `Explanation`/`Contribution` |
+| query | `src/query/` | `parse_query`, `count_phrase_matches`, `NicknameExpander`, `Searcher::search`/`explain`, `TopK`, `ranks_before` |
+| snippet | `src/snippet/` | `make_snippet`, `render` |
+| eval | `src/eval/` | `precision_at`, `recall_at`, `reciprocal_rank`, `load_qrels` |
+| apps | `apps/` | `gaffer` (index/search), `gaffer-bench`, `gaffer-eval` |
+| generators | `tools/corpusgen/`, `eval/make_qrels.py` | `parse_file`, `derive`, `render_*`, `history.parse_season`; qrels from criteria |
 
 ## 7. Key design choices (details in DECISIONS.md)
 - Immutable indexes: build once, query many. This makes global stats exact and cheap (D-014).
 - Doc-partitioned shards (D-013).
 - Raw TCP with length-prefixed frames (D-005).
 - Exceptions only at load/parse boundaries (D-009).
+- Phrases required, free words optional; a phrase scores as one BM25 pseudo-term (D-015).
+- Compressed on disk, decoded at load (D-017).
+- Nickname expansion on raw tokens, additive, weight 0.7 (D-018).

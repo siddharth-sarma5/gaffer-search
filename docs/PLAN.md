@@ -132,7 +132,7 @@ results-only historical corpus for scale; `gaffer-bench`; a precision@k/MRR eval
 - [x] 12. `feat(corpusgen): add results-only historical seasons for the scale corpus`
 - [x] 13. `perf(bench): add gaffer-bench for indexing throughput, latency percentiles and index size`
 - [x] 14. `feat(eval): add precision@k and MRR evaluator with 20 labelled queries`
-- [ ] 15. `docs: publish measured benchmark and relevance results`
+- [x] 15. `docs: publish measured benchmark and relevance results`
 
 **After M2 you should be able to explain:**
 - TAAT vs DAAT, and why phrases and compressed postings push you towards DAAT.

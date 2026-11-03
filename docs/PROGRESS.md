@@ -4,16 +4,21 @@
 then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
-- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 3 (M2-11..15) in progress (Sid: do the rest of the milestone). M1 done (19/19).
-- **Last commit:** `feat(eval): add precision@k and MRR evaluator with 20 labelled queries`.
+- **Phase:** Milestone 2 complete (15/15 commits, plus a README toolchain-notes commit). M1 done (19/19). Waiting for Sid before Milestone 3.
+- **Last commit:** `docs: publish measured benchmark and relevance results`.
 
 ## Next step
-- M2-15: publish benchmark and relevance results in the README.
+- Sid reviews Milestone 2, then Milestone 3 starts at commit 1 (RAII sockets, deadline-aware I/O).
 
 ## Open questions
 - None right now.
 
 ## Known issues / notes
+- Relevance failure analysis (eval/README.md): "two" vs "2" vocabulary mismatch (q14); short
+  player pages outranking matches (q15); "Red cards: 0" in every player page polluting "red card"
+  (q18). Candidate fixes: omit zero counts in the generator, number-word normalisation, a held-out
+  query set before tuning b (b=0.5 scored better on the test set, deliberately not adopted).
+- Benchmarks run on a shared 2-vCPU VM; p99 varies by tens of percent between runs (bench/README.md).
 - Bag-of-words limits recorded in the golden file (tests/golden/pl-2025-26-top5.txt):
   "north london derby" also ranks North West derbies 3rd and 4th when unquoted; quoted
   (M2-4), it returns exactly the two North London derbies;
