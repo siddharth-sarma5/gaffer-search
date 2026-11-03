@@ -43,7 +43,21 @@ The top four are exactly the four matches in the corpus where a late winner was 
 
 ## Quickstart
 
-Requires CMake ≥ 3.24, Ninja, and GCC ≥ 13 or Clang ≥ 18. GoogleTest is fetched automatically.
+Requires Linux (or WSL2 on Windows), CMake ≥ 3.24, Ninja, and GCC ≥ 13 or Clang ≥ 18.
+GoogleTest is fetched automatically. Native Windows/MSVC isn't supported: the sanitizer presets
+and the Milestone 3 networking code are POSIX-only.
+
+On Ubuntu 24.04 (native or WSL2), one command installs everything:
+
+```sh
+sudo apt install -y build-essential cmake ninja-build git python3 \
+  clang-18 clang-format-18 clang-tidy-18 libclang-rt-18-dev
+```
+
+On Ubuntu 22.04 the stock CMake (3.22) and GCC (11) are too old. Install `g++-13` from
+`ppa:ubuntu-toolchain-r/test` and CMake with `pip install --user "cmake>=3.24"`, then
+`export CXX=g++-13`. On WSL, clone into your Linux home directory, not `/mnt/c` or `/mnt/e`:
+builds there are much slower.
 
 ```sh
 git clone https://github.com/siddharth-sarma5/gaffer-search && cd gaffer-search
