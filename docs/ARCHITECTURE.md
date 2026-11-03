@@ -1,6 +1,6 @@
 # Architecture
 
-*Status: design draft (pre-M1). Parts marked **(M2)** or **(M3)** are planned, not built.
+*Status: Milestone 1 built (2026-11-02). Parts marked **(M2)** or **(M3)** are planned, not built.
 These diagrams are updated whenever the design changes.*
 
 ## 1. System context
@@ -38,7 +38,7 @@ flowchart TB
         text["text/<br/>Tokenizer · AsciiFold · Stopwords · SStemmer · Analyzer"]
         index["index/<br/>InvertedIndex · Postings · IndexBuilder<br/>Varint · Delta · IndexFile (M2)"]
         ranking["ranking/<br/>Bm25 · Explanation (M2)"]
-        query["query/<br/>QueryParser (M2) · NicknameExpander (M2)<br/>Evaluator TAAT→DAAT · TopK"]
+        query["query/<br/>Searcher (TAAT; DAAT in M2) · TopK<br/>QueryParser (M2) · NicknameExpander (M2)"]
         snippet["snippet/<br/>Snippeter (M2)"]
         net["net/ (M3)<br/>Socket · Framing · Codec"]
         server["server/ (M3)<br/>ShardServer · Broker · GlobalStats"]
@@ -82,7 +82,7 @@ sequenceDiagram
     participant P as QueryParser (M2)
     participant A as Analyzer
     participant X as NicknameExpander (M2)
-    participant E as Evaluator
+    participant E as Searcher
     participant I as InvertedIndex
     participant B as Bm25
     participant S as Snippeter (M2)
@@ -127,7 +127,20 @@ sequenceDiagram
     BR-->>U: top-k, partial=true, missing=[N-1]
 ```
 
-## 6. Key design choices (details in DECISIONS.md)
+## 6. As built in M1
+
+| Module | Files | Key types / functions |
+|--------|-------|-----------------------|
+| common | `src/common/` | `gaffer::Error`, `IoError`, `ParseError`; `DocId` (uint32) |
+| corpus | `src/corpus/` | `Document`, `Corpus`, `load_tsv`, `unescape_field` |
+| text | `src/text/` | `decode_utf8`, `fold_code_point`, `tokenize`, `is_stopword`, `s_stem`, `Analyzer` |
+| index | `src/index/` | `Posting`, `CollectionStats`, `InvertedIndex`, `IndexBuilder`, `build_index` |
+| ranking | `src/ranking/` | `Bm25Params`, `Bm25::idf`, `Bm25::score` |
+| query | `src/query/` | `ScoredDoc`, `ranks_before`, `TopK`, `Searcher::search` |
+| CLI | `apps/gaffer/` | `gaffer index`, `gaffer search` |
+| corpus generator | `tools/corpusgen/` | `parse_file`, `derive`, `render_match`, `render_clubs`, `render_players` |
+
+## 7. Key design choices (details in DECISIONS.md)
 - Immutable indexes: build once, query many. This makes global stats exact and cheap (D-014).
 - Doc-partitioned shards (D-013).
 - Raw TCP with length-prefixed frames (D-005).
