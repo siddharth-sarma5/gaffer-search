@@ -2,8 +2,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "common/types.hpp"
@@ -42,7 +44,42 @@ struct SearchResult {
   std::vector<QueryPhrase> phrases;  // quoted phrases, in query order
   std::vector<ScoredDoc> hits;       // best first, at most k
   std::size_t matched = 0;           // documents that satisfied the query
+  // The collection statistics the scores were computed with: the index's own
+  // or the global ones supplied by a broker. explain() reuses them, so a VAR
+  // review on a shard reproduces the shard's (globally comparable) score.
+  std::uint32_t stats_doc_count = 0;
+  double stats_avg_doc_length = 0.0;
 };
+
+// Collection statistics from outside the index: in the sharded deployment the
+// broker sends the *global* N, total length and df of the query's terms with
+// every request, so a shard computes exactly the BM25 scores a single node
+// over the whole corpus would (D-014, D-020).
+struct GlobalStats {
+  std::uint32_t doc_count = 0;
+  std::uint64_t total_length = 0;
+  std::unordered_map<std::string, std::uint32_t, index::StringHash, std::equal_to<>> df;
+
+  // Same formula as CollectionStats, so global and single-node avgdl are
+  // bit-identical when the totals are.
+  [[nodiscard]] double avg_doc_length() const noexcept {
+    return index::CollectionStats{doc_count, total_length}.avg_doc_length();
+  }
+  [[nodiscard]] std::uint32_t doc_freq(std::string_view term) const {
+    const auto it = df.find(term);
+    return it == df.end() ? 0 : it->second;
+  }
+};
+
+// The index-free half of query processing: parse, analyse and expand a query
+// into its terms and phrases (doc_freq and idf left at 0). The broker uses it
+// to learn which terms' global dfs a query needs without having an index.
+[[nodiscard]] SearchResult plan_query(std::string_view query, const text::Analyzer& analyzer,
+                                      const NicknameExpander* expander);
+
+// Every analysed term a query uses (free words, expansions, phrase words),
+// de-duplicated: the df entries a broker must send for it.
+[[nodiscard]] std::vector<std::string> required_terms(const SearchResult& plan);
 
 // Every analysed term worth highlighting in a result: free words and phrase
 // words, de-duplicated, in query order.
@@ -81,7 +118,10 @@ class Searcher {
   explicit Searcher(const index::InvertedIndex& index, ranking::Bm25Params params = {},
                     const NicknameExpander* expander = nullptr);
 
-  [[nodiscard]] SearchResult search(std::string_view query, std::size_t k) const;
+  // With `global`, scores use those statistics instead of the index's own
+  // (sharded mode). nullptr = single-node mode.
+  [[nodiscard]] SearchResult search(std::string_view query, std::size_t k,
+                                    const GlobalStats* global = nullptr) const;
 
   // "VAR review": recomputes `doc`'s score for the query in `result`, one term
   // or phrase at a time. Contributions are summed in the same order search()
@@ -94,14 +134,15 @@ class Searcher {
   [[nodiscard]] std::vector<QueryTerm> query_terms(std::string_view query) const;
 
  private:
-  void analyze_clauses(SearchResult& result) const;
-  void search_or(SearchResult& result, TopK& top) const;
-  void search_with_phrases(SearchResult& result, TopK& top) const;
+  void resolve_stats(SearchResult& result, const GlobalStats* global) const;
+  void search_or(SearchResult& result, TopK& top, const ranking::Bm25& bm25) const;
+  void search_with_phrases(SearchResult& result, TopK& top, const ranking::Bm25& bm25) const;
+  [[nodiscard]] ranking::Bm25 bm25_for(const SearchResult& result) const;
 
   const index::InvertedIndex* index_;
   const NicknameExpander* expander_;
   text::Analyzer analyzer_;
-  ranking::Bm25 bm25_;
+  ranking::Bm25Params params_;
 };
 
 }  // namespace gaffer::query

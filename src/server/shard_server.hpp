@@ -74,6 +74,7 @@ class ShardServer {
   void worker_loop(const std::stop_token& stop);
   void serve(const net::Fd& conn, const std::stop_token& stop);
   [[nodiscard]] net::Message search(const net::ShardSearchRequest& req) const;
+  [[nodiscard]] net::Message stats() const;
 
   corpus::Corpus corpus_;
   index::InvertedIndex index_;

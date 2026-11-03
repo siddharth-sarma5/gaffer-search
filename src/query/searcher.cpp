@@ -82,12 +82,17 @@ Searcher::Searcher(const index::InvertedIndex& index, ranking::Bm25Params params
       expander_(expander),
       // Same analysis as the index, or query terms won't meet document terms.
       analyzer_(index.analyzer_options()),
-      bm25_(params, index.stats().doc_count, index.stats().avg_doc_length()) {}
+      params_(params) {
+  (void)ranking::Bm25(params, 1, 1.0);  // validate k1/b up front (throws gaffer::Error)
+}
 
-void Searcher::analyze_clauses(SearchResult& result) const {
+SearchResult plan_query(std::string_view query, const text::Analyzer& analyzer,
+                        const NicknameExpander* expander) {
+  SearchResult result;
+  result.clauses = parse_query(query);
   // Pass 1: phrases and the words the user typed.
   for (const Clause& clause : result.clauses) {
-    const auto tokens = analyzer_.analyze(clause.text);
+    const auto tokens = analyzer.analyze(clause.text);
     if (clause.kind == ClauseKind::kPhrase) {
       if (tokens.empty()) {
         continue;  // e.g. "\"the\"": nothing searchable, so no constraint
@@ -96,7 +101,6 @@ void Searcher::analyze_clauses(SearchResult& result) const {
       for (const auto& tok : tokens) {
         phrase.terms.push_back(tok.term);
         phrase.offsets.push_back(tok.position - tokens.front().position);
-        phrase.idf += bm25_.idf(index_->doc_freq(tok.term));
       }
       result.phrases.push_back(std::move(phrase));
       continue;
@@ -108,57 +112,83 @@ void Searcher::analyze_clauses(SearchResult& result) const {
         ++it->query_tf;
         continue;
       }
-      const std::uint32_t df = index_->doc_freq(tok.term);
-      result.terms.push_back(QueryTerm{tok.term, 1, df, bm25_.idf(df), 1.0, {}});
+      result.terms.push_back(QueryTerm{tok.term, 1, 0, 0.0, 1.0, {}});
     }
   }
 
   // Pass 2: nickname expansions of free words (phrases stay literal). Run after
   // pass 1 so a word the user typed is never demoted to expansion weight just
   // because an alias produced it first.
-  if (expander_ == nullptr) {
-    return;
+  if (expander == nullptr) {
+    return result;
   }
   for (const Clause& clause : result.clauses) {
     if (clause.kind != ClauseKind::kTerms) {
       continue;
     }
-    for (const Expansion& e : expander_->find(clause.text)) {
-      for (const auto& tok : analyzer_.analyze(e.expansion)) {
+    for (const Expansion& e : expander->find(clause.text)) {
+      for (const auto& tok : analyzer.analyze(e.expansion)) {
         if (std::ranges::find(result.terms, tok.term, &QueryTerm::term) != result.terms.end()) {
           continue;  // already in the query (typed, or from another alias)
         }
-        const std::uint32_t df = index_->doc_freq(tok.term);
-        result.terms.push_back(
-            QueryTerm{tok.term, 1, df, bm25_.idf(df), expander_->weight(), e.alias});
+        result.terms.push_back(QueryTerm{tok.term, 1, 0, 0.0, expander->weight(), e.alias});
       }
     }
   }
+  return result;
+}
+
+std::vector<std::string> required_terms(const SearchResult& plan) {
+  return highlight_terms(plan);  // the same set: phrase words + free terms, de-duplicated
+}
+
+void Searcher::resolve_stats(SearchResult& result, const GlobalStats* global) const {
+  result.stats_doc_count = global != nullptr ? global->doc_count : index_->stats().doc_count;
+  result.stats_avg_doc_length =
+      global != nullptr ? global->avg_doc_length() : index_->stats().avg_doc_length();
+  const ranking::Bm25 bm25 = bm25_for(result);
+  auto df = [&](std::string_view term) {
+    return global != nullptr ? global->doc_freq(term) : index_->doc_freq(term);
+  };
+  for (QueryPhrase& ph : result.phrases) {
+    ph.idf = 0.0;
+    for (const auto& term : ph.terms) {
+      ph.idf += bm25.idf(df(term));  // summed in word order, as before
+    }
+  }
+  for (QueryTerm& qt : result.terms) {
+    qt.doc_freq = df(qt.term);
+    qt.idf = bm25.idf(qt.doc_freq);
+  }
+}
+
+ranking::Bm25 Searcher::bm25_for(const SearchResult& result) const {
+  return {params_, result.stats_doc_count, result.stats_avg_doc_length};
 }
 
 std::vector<QueryTerm> Searcher::query_terms(std::string_view query) const {
-  SearchResult r;
-  r.clauses = parse_query(query);
-  analyze_clauses(r);
+  SearchResult r = plan_query(query, analyzer_, expander_);
+  resolve_stats(r, nullptr);
   return std::move(r.terms);
 }
 
-SearchResult Searcher::search(std::string_view query, std::size_t k) const {
-  SearchResult result;
-  result.clauses = parse_query(query);
-  analyze_clauses(result);
+SearchResult Searcher::search(std::string_view query, std::size_t k,
+                              const GlobalStats* global) const {
+  SearchResult result = plan_query(query, analyzer_, expander_);
+  resolve_stats(result, global);
+  const ranking::Bm25 bm25 = bm25_for(result);
   TopK top(k);
   if (result.phrases.empty()) {
-    search_or(result, top);
+    search_or(result, top, bm25);
   } else {
-    search_with_phrases(result, top);
+    search_with_phrases(result, top, bm25);
   }
   result.hits = std::move(top).take_sorted();
   return result;
 }
 
 // Free words only: disjunctive DAAT.
-void Searcher::search_or(SearchResult& result, TopK& top) const {
+void Searcher::search_or(SearchResult& result, TopK& top, const ranking::Bm25& bm25) const {
   std::vector<PostingCursor> cursors;
   cursors.reserve(result.terms.size());
   for (const QueryTerm& qt : result.terms) {
@@ -182,7 +212,7 @@ void Searcher::search_or(SearchResult& result, TopK& top) const {
       }
       // Repeating a word in the query ("salah salah") weights it linearly.
       const double weight = static_cast<double>(result.terms[i].query_tf) * result.terms[i].weight;
-      score += weight * bm25_.score(result.terms[i].idf, cursors[i].tf(), doc_length);
+      score += weight * bm25.score(result.terms[i].idf, cursors[i].tf(), doc_length);
       cursors[i].next();
     }
     ++result.matched;
@@ -191,7 +221,8 @@ void Searcher::search_or(SearchResult& result, TopK& top) const {
 }
 
 // At least one phrase: conjunctive over phrase words, then a positional check.
-void Searcher::search_with_phrases(SearchResult& result, TopK& top) const {
+void Searcher::search_with_phrases(SearchResult& result, TopK& top,
+                                   const ranking::Bm25& bm25) const {
   // One cursor per phrase word occurrence, flattened. Phrase p owns the
   // cursors in [first[p], first[p + 1]).
   std::vector<PostingCursor> required;
@@ -222,7 +253,7 @@ void Searcher::search_with_phrases(SearchResult& result, TopK& top) const {
       }
       const std::uint32_t occurrences = count_phrase_matches(positions, result.phrases[p].offsets);
       all_phrases = occurrences > 0;
-      score += bm25_.score(result.phrases[p].idf, occurrences, doc_length);
+      score += bm25.score(result.phrases[p].idf, occurrences, doc_length);
     }
     if (!all_phrases) {
       continue;
@@ -232,7 +263,7 @@ void Searcher::search_with_phrases(SearchResult& result, TopK& top) const {
       if (optional[i].doc() == doc) {
         const double weight =
             static_cast<double>(result.terms[i].query_tf) * result.terms[i].weight;
-        score += weight * bm25_.score(result.terms[i].idf, optional[i].tf(), doc_length);
+        score += weight * bm25.score(result.terms[i].idf, optional[i].tf(), doc_length);
       }
     }
     ++result.matched;
@@ -244,7 +275,8 @@ ranking::Explanation Searcher::explain(const SearchResult& result, DocId doc) co
   ranking::Explanation ex;
   ex.doc = doc;
   ex.doc_length = index_->doc_length(doc);
-  ex.avg_doc_length = index_->stats().avg_doc_length();
+  ex.avg_doc_length = result.stats_avg_doc_length;
+  const ranking::Bm25 bm25 = bm25_for(result);
 
   // Same order as search(): phrases first (only present in phrase mode), then free terms.
   std::vector<std::span<const std::uint32_t>> positions;
@@ -269,7 +301,7 @@ ranking::Explanation Searcher::explain(const SearchResult& result, DocId doc) co
       c.tf = count_phrase_matches(positions, ph.offsets);
     }
     if (c.tf > 0) {
-      c.score = bm25_.score(c.idf, c.tf, ex.doc_length);
+      c.score = bm25.score(c.idf, c.tf, ex.doc_length);
     }
     ex.total += c.score;
     ex.parts.push_back(std::move(c));
@@ -282,7 +314,7 @@ ranking::Explanation Searcher::explain(const SearchResult& result, DocId doc) co
     cur.advance_to(doc);
     if (cur.doc() == doc) {
       c.tf = cur.tf();
-      c.score = c.weight * bm25_.score(qt.idf, c.tf, ex.doc_length);
+      c.score = c.weight * bm25.score(qt.idf, c.tf, ex.doc_length);
       ex.total += c.score;
     }
     ex.parts.push_back(std::move(c));

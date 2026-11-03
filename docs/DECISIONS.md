@@ -138,3 +138,16 @@ approved) or **Proposed** (Claude's recommendation; Sid approved the plan as a w
   single-node tie-breaks (required for exact equivalence). (b) keeps assignments stable when
   documents are inserted, which matters for mutable indexes; ours are rebuilt in full.
   (c) would skew load (all 2025-26 docs in one shard).
+
+### D-020 · 2026-11-03 · Stateless shards: global df sent with each query — Proposed (M3)
+- Refines D-014 (b). The broker gathers N, total length and every term's df from all shards once
+  at startup (StatsRequest), then sends N, total length and the global df of *just the query's
+  terms* inside each ShardSearchRequest.
+- **Options:** push global stats to shards once and have them cache it (stateful); send per
+  query (stateless).
+- **Why per query:** a restarted shard needs no re-sync, and two brokers can't leave shards with
+  conflicting state. The cost is a few dozen bytes per term per request. The broker plans the
+  query without an index (`query::plan_query`) to know which terms to send.
+- **Exactness:** avgdl uses the same formula on the same totals, idf the same df, and scoring the
+  same summation order, so a shard's score equals the single-node score bit for bit. Tested on
+  every evaluation query, against a local-stats control that fails.
