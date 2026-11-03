@@ -54,7 +54,8 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 **Acceptance criteria.**
 - `cmake --preset asan && ctest --preset asan` passes locally and in CI (GCC + Clang).
 - clang-format and clang-tidy checks pass in CI.
-- `gaffer search "palmer hat-trick"` puts Cole Palmer's hat-trick match first, and
+- `gaffer search "palmer hat-trick"` puts Cole Palmer's hat-trick match in the top 3 (his
+  player page, which lists "Hat-tricks: 1", legitimately ranks first), and
   `gaffer search "haaland brace"` returns only Haaland two-goal matches in the top 5.
   (The source has no Haaland hat-trick in 2025-26; see PROGRESS notes.)
 - `gaffer search "late winner anfield"` returns Anfield matches tagged "late winner" at the top.
@@ -77,7 +78,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 13. `feat(text): add stopword filter, S-stemmer and Analyzer pipeline`
 - [x] 14. `feat(index): add in-memory inverted index with collection statistics`
 - [x] 15. `feat(ranking): add BM25 scorer`
-- [ ] 16. `feat(query): add term-at-a-time evaluation with bounded min-heap top-k`
+- [x] 16. `feat(query): add term-at-a-time evaluation with bounded min-heap top-k`
 - [ ] 17. `feat(cli): add gaffer CLI with index and search commands and themed output`
 - [ ] 18. `test: add end-to-end golden query tests on a fixture corpus`
 - [ ] 19. `docs: write README quickstart and sample output; update architecture`

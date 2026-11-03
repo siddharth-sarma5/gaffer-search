@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(ranking): add BM25 scorer`.
+- **Last commit:** `feat(query): add term-at-a-time evaluation with bounded min-heap top-k`.
 
 ## Next step
-- M1-16: term-at-a-time evaluation with bounded min-heap top-k.
+- M1-17: gaffer CLI with index and search commands.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
