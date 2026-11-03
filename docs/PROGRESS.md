@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `feat(server): return flagged partial results on shard timeout or failure`.
+- **Last commit:** `test(server): add multi-shard integration and fault-injection tests; run TSan in CI`.
 
 ## Next step
-- M3-9: multi-shard integration and fault-injection tests; TSan in CI.
+- M3-10: assert sharded results equal single-node results (N=1,2,4).
 
 ## Open questions
 - None right now.
