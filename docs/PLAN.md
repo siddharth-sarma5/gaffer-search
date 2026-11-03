@@ -54,7 +54,9 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 **Acceptance criteria.**
 - `cmake --preset asan && ctest --preset asan` passes locally and in CI (GCC + Clang).
 - clang-format and clang-tidy checks pass in CI.
-- `gaffer search "haaland hat-trick"` puts a Haaland hat-trick match in the top 3.
+- `gaffer search "palmer hat-trick"` puts Cole Palmer's hat-trick match first, and
+  `gaffer search "haaland brace"` returns only Haaland two-goal matches in the top 5.
+  (The source has no Haaland hat-trick in 2025-26; see PROGRESS notes.)
 - `gaffer search "late winner anfield"` returns Anfield matches tagged "late winner" at the top.
 - BM25 unit tests match hand-computed scores to 1e-6.
 - Corpus generation is deterministic (same input → byte-identical output, checked in CI).
@@ -66,7 +68,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 4. `ci: build and test with GCC and Clang under ASan/UBSan; check format and tidy`
 - [x] 5. `chore(data): vendor pinned openfootball 2025-26 Premier League file with provenance`
 - [x] 6. `feat(corpusgen): parse match blocks (date, venue, attendance, score, scorers, cards, referees)`
-- [ ] 7. `feat(corpusgen): derive match tags and write match documents`
+- [x] 7. `feat(corpusgen): derive match tags and write match documents`
 - [ ] 8. `feat(corpusgen): generate club and player documents`
 - [ ] 9. `test(corpusgen): cover parser edge cases and tag derivation; run in CI`
 - [ ] 10. `feat(data): commit generated 2025-26 corpus with measured doc/token counts`

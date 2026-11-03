@@ -96,7 +96,7 @@ scratch in modern C++, so that each one can be explained in an interview.
 
 ## 8. Success criteria
 
-- **M1:** `gaffer search "haaland hat-trick"` returns the right matches in the top 3; CI is green
+- **M1:** `gaffer search "palmer hat-trick"` returns his hat-trick match first; CI is green
   with ASan/UBSan.
 - **M2:** phrase queries work; the compressed index is measurably smaller than the uncompressed
   one; a benchmark table and precision@k results are in the README from real runs.

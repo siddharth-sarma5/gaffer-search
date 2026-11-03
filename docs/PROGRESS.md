@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(corpusgen): parse match blocks (date, venue, attendance, score, scorers, cards, referees)`.
+- **Last commit:** `feat(corpusgen): derive match tags and write match documents`.
 
 ## Next step
-- M1-7: derive match tags and write match documents.
+- M1-8: club and player documents.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
@@ -18,6 +18,8 @@ then continue from the first unchecked item in PLAN.md.*
   so pushes are refused. Commits are made locally and will be pushed once access is granted.
 
 ## Known issues / notes
+- The source has no Premier League hat-trick for Haaland in 2025-26 (27 goals, 7 braces).
+  The M1 acceptance query changed to "palmer hat-trick" / "haaland brace" (2026-11-02).
 - The openfootball 2026-27 file is in progress (season under way) and uses a different layout.
   It is excluded.
 - Player names in the source use mixed capitalisation (e.g. `Erling HAALAND`). The generator
