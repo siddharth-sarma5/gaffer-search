@@ -9,6 +9,7 @@
 #include <istream>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -190,6 +191,17 @@ Corpus load_tsv_file(const std::filesystem::path& path) {
     throw IoError("cannot open corpus file '" + path.string() + "'");
   }
   return load_tsv(in, path.string());
+}
+
+Corpus load_tsv_files(std::span<const std::filesystem::path> paths) {
+  std::vector<Document> all;
+  for (const auto& path : paths) {
+    const Corpus part = load_tsv_file(path);
+    for (const Document& d : part.documents()) {
+      all.push_back(d);
+    }
+  }
+  return Corpus(std::move(all));  // checks keys are unique across files
 }
 
 }  // namespace gaffer::corpus

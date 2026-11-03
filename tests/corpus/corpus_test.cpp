@@ -1,7 +1,9 @@
 #include "corpus/corpus.hpp"
 
+#include <filesystem>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -93,6 +95,24 @@ TEST(LoadTsvFileTest, LoadsTheCommittedCorpus) {
   ASSERT_TRUE(id.has_value());
   EXPECT_EQ(c[*id].type, DocType::kMatch);
   EXPECT_NE(c[*id].body.find("late winner"), std::string::npos);
+}
+
+TEST(LoadTsvFilesTest, ConcatenatesInOrderAndRejectsDuplicateKeys) {
+  const std::vector<std::filesystem::path> both{"tests/fixtures/mini_corpus.tsv",
+                                                "data/corpus/pl-2025-26.tsv"};
+  const Corpus c = load_tsv_files(both);
+  EXPECT_EQ(c.size(), 6U + 938U);
+  EXPECT_EQ(c[0].key, "m-anfield");
+  EXPECT_EQ(c.find("season-2025-26"), DocId{6});
+  const std::vector<std::filesystem::path> twice{"tests/fixtures/mini_corpus.tsv",
+                                                 "tests/fixtures/mini_corpus.tsv"};
+  EXPECT_THROW((void)load_tsv_files(twice), Error);
+}
+
+TEST(LoadTsvFileTest, LoadsTheHistoryCorpus) {
+  const Corpus c = load_tsv_file("data/corpus/pl-history.tsv");
+  EXPECT_EQ(c.size(), 12786U);
+  EXPECT_TRUE(c.find("hist-1996-04-03-liverpool-newcastle-united").has_value());
 }
 
 }  // namespace

@@ -53,4 +53,8 @@ class Corpus {
 // Opens and parses a corpus file. Throws gaffer::IoError if it can't be opened.
 [[nodiscard]] Corpus load_tsv_file(const std::filesystem::path& path);
 
+// Loads several corpus files as one corpus, in order (DocIds continue across
+// files). A key appearing in two files is an error (gaffer::Error).
+[[nodiscard]] Corpus load_tsv_files(std::span<const std::filesystem::path> paths);
+
 }  // namespace gaffer::corpus

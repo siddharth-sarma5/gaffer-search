@@ -1,0 +1,32 @@
+{
+  "label": "pl-2025-26",
+  "build": "release",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "hw_threads": 2,
+  "compiler": "13.3.0",
+  "docs": 938,
+  "text_bytes": 661960,
+  "tokens": 95544,
+  "terms": 1574,
+  "postings": 60424,
+  "index_build_ms_median": 34.263,
+  "index_runs": 5,
+  "docs_per_s": 27376.7,
+  "mb_per_s": 19.320,
+  "postings_fixed_width_bytes": 1107264,
+  "postings_compressed_bytes": 237406,
+  "index_file_bytes": 250489,
+  "serialize_ms_median": 3.673,
+  "load_ms_median": 4.399,
+  "queries": 38,
+  "reps": 200,
+  "k": 10,
+  "latency_us": {"p50": 4.29, "p90": 16.54, "p99": 24.37, "max": 169.01, "mean": 6.78, "samples": 7600},
+  "by_category_us": {
+    "mixed": {"p50": 4.08, "p99": 13.49},
+    "multi": {"p50": 9.78, "p99": 34.87},
+    "nickname": {"p50": 12.84, "p99": 36.28},
+    "phrase": {"p50": 4.15, "p99": 13.59},
+    "term": {"p50": 1.72, "p99": 4.83}
+  }
+}

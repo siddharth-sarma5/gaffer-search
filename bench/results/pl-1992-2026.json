@@ -1,0 +1,32 @@
+{
+  "label": "pl-1992-2026",
+  "build": "release",
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "hw_threads": 2,
+  "compiler": "13.3.0",
+  "docs": 13724,
+  "text_bytes": 4061329,
+  "tokens": 652085,
+  "terms": 1660,
+  "postings": 378734,
+  "index_build_ms_median": 145.103,
+  "index_runs": 5,
+  "docs_per_s": 94580.8,
+  "mb_per_s": 27.989,
+  "postings_fixed_width_bytes": 7153148,
+  "postings_compressed_bytes": 1433730,
+  "index_file_bytes": 1460332,
+  "serialize_ms_median": 15.011,
+  "load_ms_median": 18.219,
+  "queries": 38,
+  "reps": 200,
+  "k": 10,
+  "latency_us": {"p50": 32.92, "p90": 231.84, "p99": 436.66, "max": 689.73, "mean": 76.35, "samples": 7600},
+  "by_category_us": {
+    "mixed": {"p50": 51.97, "p99": 388.40},
+    "multi": {"p50": 87.04, "p99": 464.13},
+    "nickname": {"p50": 46.38, "p99": 452.37},
+    "phrase": {"p50": 41.25, "p99": 395.24},
+    "term": {"p50": 12.75, "p99": 155.70}
+  }
+}

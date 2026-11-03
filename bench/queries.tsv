@@ -1,0 +1,43 @@
+# Fixed query log for gaffer-bench. Format: category<TAB>query.
+# Categories: term (one word), multi (OR of several words), phrase (quoted),
+# mixed (phrase + free words), nickname (exercises expansion).
+# Chosen to cover rare and very common terms (e.g. "arsenal", "win") on both
+# the 2025-26 corpus and the 1992-2025 history corpus.
+term	arsenal
+term	anfield
+term	haaland
+term	comeback
+term	thrashing
+term	win
+term	goalless
+term	newcastle
+multi	late winner at anfield
+multi	haaland brace
+multi	palmer hat-trick
+multi	liverpool newcastle 4-3
+multi	manchester united comeback win
+multi	chelsea arsenal draw
+multi	clean sheet away win
+multi	high-scoring thrashing
+multi	sent off second yellow
+multi	stoppage time penalty
+phrase	"late winner"
+phrase	"north london derby"
+phrase	"came from behind"
+phrase	"goalless draw"
+phrase	"kept a clean sheet"
+phrase	"stadium of light"
+phrase	"half-time lead lost"
+phrase	"manchester united"
+mixed	haaland "late winner"
+mixed	arsenal "goalless draw"
+mixed	"came from behind" liverpool
+mixed	"north london derby" thrashing
+mixed	"clean sheet" everton
+mixed	"high-scoring" tottenham
+nickname	gunners
+nickname	toffees comeback
+nickname	red devils
+nickname	spurs thrashing
+nickname	reds late winner
+nickname	magpies away win

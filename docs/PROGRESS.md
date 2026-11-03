@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 3 (M2-11..15) in progress (Sid: do the rest of the milestone). M1 done (19/19).
-- **Last commit:** `feat(corpusgen): add results-only historical seasons for the scale corpus`.
+- **Last commit:** `perf(bench): add gaffer-bench for indexing throughput, latency percentiles and index size`.
 
 ## Next step
-- M2-13: gaffer-bench (indexing throughput, latency percentiles, index size).
+- M2-14: precision@k and MRR evaluator with 20 labelled queries.
 
 ## Open questions
 - None right now.

@@ -76,3 +76,8 @@ add_test(NAME cli.var_review
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_tests_properties(cli.var_review PROPERTIES LABELS cli
   PASS_REGULAR_EXPRESSION "VAR review.*anfield +tf +[0-9]+ +idf.*total")
+# Smoke test: the benchmark runs end to end (tiny settings; not a measurement).
+add_test(NAME bench.smoke
+  COMMAND gaffer-bench --runs 1 --reps 1
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(bench.smoke PROPERTIES LABELS bench PASS_REGULAR_EXPRESSION "latency: +p50")
