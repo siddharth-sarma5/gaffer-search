@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(corpusgen): derive match tags and write match documents`.
+- **Last commit:** `feat(corpusgen): generate club, player and season documents`.
 
 ## Next step
-- M1-8: club and player documents.
+- M1-9: corpusgen tests and CI job.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

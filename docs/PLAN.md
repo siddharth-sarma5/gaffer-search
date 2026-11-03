@@ -69,7 +69,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 5. `chore(data): vendor pinned openfootball 2025-26 Premier League file with provenance`
 - [x] 6. `feat(corpusgen): parse match blocks (date, venue, attendance, score, scorers, cards, referees)`
 - [x] 7. `feat(corpusgen): derive match tags and write match documents`
-- [ ] 8. `feat(corpusgen): generate club and player documents`
+- [x] 8. `feat(corpusgen): generate club, player and season documents`
 - [ ] 9. `test(corpusgen): cover parser edge cases and tag derivation; run in CI`
 - [ ] 10. `feat(data): commit generated 2025-26 corpus with measured doc/token counts`
 - [ ] 11. `feat(corpus): add Document type and TSV corpus loader with error reporting`

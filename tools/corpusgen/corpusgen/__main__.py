@@ -10,16 +10,23 @@ import argparse
 import sys
 from pathlib import Path
 
+from corpusgen.aggregate import league_table, render_clubs, render_players, render_season
 from corpusgen.derive import derive
 from corpusgen.parse import ParseError, parse_file
-from corpusgen.render import render_match
+from corpusgen.render import match_id, render_match
 from corpusgen.tsv import Document, write_corpus
 
 
 def build_documents(text: str, season_start_year: int) -> list[Document]:
+    """All documents in a fixed order: season, clubs (table order), matches, players."""
     matches = parse_file(text, season_start_year)
     matches.sort(key=lambda m: (m.date, m.kickoff, m.home))
-    return [render_match(m, derive(m)) for m in matches]
+    facts = {match_id(m): derive(m) for m in matches}
+    table = league_table(matches)
+    return ([render_season(matches, table)]
+            + render_clubs(matches, facts, table)
+            + [render_match(m, facts[match_id(m)]) for m in matches]
+            + render_players(matches))
 
 
 def main(argv: list[str] | None = None) -> int:
