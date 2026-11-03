@@ -1,6 +1,12 @@
 #include "query/searcher.hpp"
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <random>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -81,6 +87,63 @@ TEST_F(SearcherTest, UsesTheIndexAnalyzerSettings) {
   const index::InvertedIndex unstemmed = std::move(b).build();
   // If the searcher stemmed "goals" -> "goal" it would miss this unstemmed index.
   EXPECT_EQ(Searcher(unstemmed).search("goals", 10).hits.size(), 1U);
+}
+
+// Property test: DAAT search equals exhaustive scoring of every document.
+// Random documents over a tiny vocabulary give lots of overlap and ties.
+TEST(SearcherPropertyTest, MatchesBruteForceScoring) {
+  const std::vector<std::string> vocab{"salah",   "haaland", "goal",    "late", "winner",
+                                       "anfield", "derby",   "penalty", "red",  "card"};
+  std::mt19937 rng(1886);
+  for (int trial = 0; trial < 50; ++trial) {
+    index::IndexBuilder b{text::Analyzer{}};
+    const int n_docs = 1 + static_cast<int>(rng() % 40);
+    for (int d = 0; d < n_docs; ++d) {
+      std::string text;
+      const auto len = rng() % 12;
+      for (std::uint32_t w = 0; w < len; ++w) {
+        text += vocab[rng() % vocab.size()] + " ";
+      }
+      b.add(text);
+    }
+    const index::InvertedIndex idx = std::move(b).build();
+    const Searcher s(idx);
+
+    std::string q;
+    for (std::uint32_t w = 0; w < 1 + rng() % 4; ++w) {
+      q += vocab[rng() % vocab.size()] + " ";
+    }
+    const std::size_t k = 1 + rng() % 8;
+
+    // Reference: score every doc by walking each term's full postings.
+    const auto terms = s.query_terms(q);
+    const ranking::Bm25 bm({}, idx.stats().doc_count, idx.stats().avg_doc_length());
+    std::vector<double> score(idx.stats().doc_count, 0.0);
+    std::vector<bool> hit(idx.stats().doc_count, false);
+    for (const auto& qt : terms) {
+      for (const auto& p : idx.postings(qt.term)) {
+        score[p.doc] += qt.query_tf * bm.score(qt.idf, p.tf, idx.doc_length(p.doc));
+        hit[p.doc] = true;
+      }
+    }
+    std::vector<ScoredDoc> all;
+    for (DocId d = 0; d < score.size(); ++d) {
+      if (hit[d]) {
+        all.push_back({d, score[d]});
+      }
+    }
+    std::ranges::sort(all, ranks_before);
+    const std::size_t matched = all.size();
+    all.resize(std::min(k, all.size()));
+
+    const SearchResult r = s.search(q, k);
+    EXPECT_EQ(r.matched, matched) << "trial " << trial;
+    ASSERT_EQ(r.hits.size(), all.size()) << "trial " << trial;
+    for (std::size_t i = 0; i < all.size(); ++i) {
+      EXPECT_EQ(r.hits[i].doc, all[i].doc) << "trial " << trial << " rank " << i;
+      EXPECT_DOUBLE_EQ(r.hits[i].score, all[i].score) << "trial " << trial << " rank " << i;
+    }
+  }
 }
 
 }  // namespace

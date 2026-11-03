@@ -5,6 +5,7 @@ add_library(gaffer_core STATIC
   corpus/corpus.cpp
   corpus/document.cpp
   index/inverted_index.cpp
+  index/posting_cursor.cpp
   query/searcher.cpp
   query/top_k.cpp
   ranking/bm25.cpp

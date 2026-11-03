@@ -29,15 +29,20 @@ struct SearchResult {
 
 // Runs ranked disjunctive ("OR") queries against an index.
 //
-// M1 evaluation strategy: term-at-a-time (TAAT).
-//   for each query term t:
-//     for each posting (d, tf) in postings(t):
-//       acc[d] += query_tf(t) * bm25(idf(t), tf, len(d))
-//   then push every touched d into a size-k TopK.
-// The accumulators are a dense array indexed by DocId plus a list of touched
-// docs, so updates are O(1) array writes with no hashing. The cost is O(N)
-// memory per query. Fine for thousands of docs. M2 replaces this with
-// document-at-a-time evaluation, which needs no accumulators and supports phrases.
+// Evaluation strategy: document-at-a-time (DAAT).
+//   open a PostingCursor per query term
+//   loop:
+//     d = smallest current doc among the cursors   (kNoMoreDocs when all done)
+//     score(d) = sum over cursors sitting on d of query_tf * bm25(idf, tf, len(d))
+//     push (d, score) into a size-k TopK; advance those cursors
+// Each document is scored completely in one step, so:
+//   * no accumulator array: O(#terms + k) memory instead of O(N) (M1's TAAT);
+//   * all of d's postings, including positions, are available together,
+//     which is what phrase matching needs;
+//   * it streams over postings in order, so compressed lists can be decoded
+//     on the fly (M2) and dynamic pruning such as WAND could be added later.
+// Contributions are summed in query-term order, the same order TAAT used, so
+// scores are bit-for-bit identical to M1. The golden test checks this.
 //
 // Non-owning: the index must outlive the Searcher.
 class Searcher {
