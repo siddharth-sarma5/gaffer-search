@@ -170,7 +170,7 @@ frameworks (stretch: epoll), dynamic re-sharding.
 - Measured latency p50/p99 vs shard count (1/2/4/8) is in the README.
 
 **Commits.**
-- [ ] 1. `feat(net): add RAII socket wrappers and deadline-aware read_exact/write_all`
+- [x] 1. `feat(net): add RAII socket wrappers and deadline-aware read_exact/write_all`
 - [ ] 2. `feat(net): add length-prefixed framing and versioned message codec`
 - [ ] 3. `test(net): cover codec round-trips and malformed or oversized frames`
 - [ ] 4. `feat(index): partition corpus into N shards and build per-shard indexes`

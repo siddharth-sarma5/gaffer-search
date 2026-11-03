@@ -11,6 +11,7 @@ add_library(gaffer_core STATIC
   index/posting_cursor.cpp
   index/postings_codec.cpp
   index/varint.cpp
+  net/socket.cpp
   query/nicknames.cpp
   query/phrase.cpp
   query/query_parser.cpp
@@ -29,3 +30,7 @@ add_library(gaffer_core STATIC
 target_include_directories(gaffer_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(gaffer_core PUBLIC cxx_std_20)
 target_link_libraries(gaffer_core PRIVATE gaffer_warnings)
+
+# Threads are used by the M3 servers (std::jthread). Threads::Threads adds -pthread.
+find_package(Threads REQUIRED)
+target_link_libraries(gaffer_core PUBLIC Threads::Threads)

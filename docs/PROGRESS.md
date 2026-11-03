@@ -4,11 +4,11 @@
 then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
-- **Phase:** Milestone 2 complete (15/15 commits, plus a README toolchain-notes commit). M1 done (19/19). Waiting for Sid before Milestone 3.
-- **Last commit:** `docs: publish measured benchmark and relevance results`.
+- **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
+- **Last commit:** `feat(net): add RAII socket wrappers and deadline-aware read_exact/write_all`.
 
 ## Next step
-- Sid reviews Milestone 2, then Milestone 3 starts at commit 1 (RAII sockets, deadline-aware I/O).
+- M3-2: length-prefixed framing and versioned message codec.
 
 ## Open questions
 - None right now.
