@@ -70,7 +70,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 6. `feat(corpusgen): parse match blocks (date, venue, attendance, score, scorers, cards, referees)`
 - [x] 7. `feat(corpusgen): derive match tags and write match documents`
 - [x] 8. `feat(corpusgen): generate club, player and season documents`
-- [ ] 9. `test(corpusgen): cover parser edge cases and tag derivation; run in CI`
+- [x] 9. `test(corpusgen): cover parser edge cases and tag derivation; run in CI`
 - [ ] 10. `feat(data): commit generated 2025-26 corpus with measured doc/token counts`
 - [ ] 11. `feat(corpus): add Document type and TSV corpus loader with error reporting`
 - [ ] 12. `feat(text): add UTF-8 aware tokenizer with ASCII folding`

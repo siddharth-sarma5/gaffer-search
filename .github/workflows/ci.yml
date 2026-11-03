@@ -34,6 +34,17 @@ jobs:
       - name: Test
         run: ctest --preset ${{ matrix.preset }}
 
+  corpusgen:
+    name: corpusgen (Python)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests
+        run: python -m unittest discover -s tools/corpusgen/tests -t tools/corpusgen -v
+
   lint:
     name: clang-format / clang-tidy
     runs-on: ubuntu-24.04

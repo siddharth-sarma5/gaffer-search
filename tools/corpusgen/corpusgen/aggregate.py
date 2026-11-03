@@ -20,8 +20,20 @@ from corpusgen.tsv import Document
 RELEGATION_PLACES = 3
 
 
+# Letters NFKD can't decompose into ASCII (they're distinct letters, not
+# accented ones), so they need an explicit mapping or they'd be dropped.
+_NON_DECOMPOSABLE = str.maketrans({"Ø": "O", "ø": "o", "Æ": "AE", "æ": "ae", "Œ": "OE",
+                                   "œ": "oe", "ß": "ss", "Ł": "L", "ł": "l", "Đ": "D",
+                                   "đ": "d", "Þ": "Th", "þ": "th", "ð": "d", "ı": "i"})
+
+
+def ascii_fold(text: str) -> str:
+    text = text.translate(_NON_DECOMPOSABLE)
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+
+
 def slugify(name: str) -> str:
-    ascii_ = unicodedata.normalize("NFKD", name).encode("ascii", "ignore").decode()
+    ascii_ = ascii_fold(name)
     return re.sub(r"[^a-z0-9]+", "-", ascii_.lower()).strip("-")
 
 
