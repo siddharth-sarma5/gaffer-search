@@ -181,7 +181,11 @@ net::SearchResponse Broker::search(const net::SearchRequest& request) {
     const auto* r =
         reply.has_value() ? std::get_if<net::ShardSearchResponse>(&reply.value()) : nullptr;
     if (r == nullptr) {
-      throw Error("shard " + std::to_string(i) + " failed");  // partial results: next commit
+      // Timed out, refused, hung up, or answered with an error: degrade
+      // gracefully. The client gets the other shards' results, flagged as
+      // partial with this shard listed, within the same deadline.
+      response.missing_shards.push_back(static_cast<std::uint32_t>(i));
+      continue;
     }
     response.matched += r->matched;
     lists.push_back(r->hits);

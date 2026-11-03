@@ -48,6 +48,13 @@ struct BrokerOptions {
 // share one Deadline, so the whole fan-out finishes within shard_deadline
 // (plus scheduling noise). Joined before merging; nothing outlives the request.
 //
+// Failure: a shard that times out, refuses the connection, hangs up or replies
+// with an error is listed in SearchResponse::missing_shards, and the client gets
+// the merged results of the shards that did answer. The query still returns
+// within shard_deadline: a slow shard costs completeness, not latency
+// ("partial results beat late results"). Index order in missing_shards is the
+// --shard order the broker was given.
+//
 // Connections: each shard has a small pool of open connections. A call takes
 // an idle one or opens a new one, and returns it to the pool on success. A
 // pooled connection can be stale (e.g. the shard restarted); if it fails

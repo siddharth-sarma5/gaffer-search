@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `feat(server): add broker with parallel fan-out, per-shard deadlines and k-way merge`.
+- **Last commit:** `feat(server): return flagged partial results on shard timeout or failure`.
 
 ## Next step
-- M3-8: flagged partial results on shard timeout or failure.
+- M3-9: multi-shard integration and fault-injection tests; TSan in CI.
 
 ## Open questions
 - None right now.

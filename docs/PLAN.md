@@ -177,7 +177,7 @@ frameworks (stretch: epoll), dynamic re-sharding.
 - [x] 5. `feat(server): add shard server with bounded thread pool and graceful shutdown`
 - [x] 6. `feat(server): aggregate global statistics at the broker and score shards with them`
 - [x] 7. `feat(server): add broker with parallel fan-out, per-shard deadlines and k-way merge`
-- [ ] 8. `feat(server): return flagged partial results on shard timeout or failure`
+- [x] 8. `feat(server): return flagged partial results on shard timeout or failure`
 - [ ] 9. `test(server): add multi-shard integration and fault-injection tests; run TSan in CI`
 - [ ] 10. `test: assert sharded results equal single-node results`
 - [ ] 11. `build: add Dockerfile and docker-compose for broker plus shards`
