@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 1 (M2-1..5) done; waiting for Sid before batch 2. M1 done (19/19).
-- **Last commit:** `feat(index): load and validate on-disk index; reject corrupt files`.
+- **Last commit:** `feat(snippet): select best snippet window and highlight matched terms`.
 
 ## Next step
-- M2-9: best snippet window with highlighted terms.
+- M2-10: club nickname expansion with down-weighted synonym terms.
 
 ## Open questions
 - None right now.

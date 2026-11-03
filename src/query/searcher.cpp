@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -55,6 +56,24 @@ DocId align(std::vector<PostingCursor>& cursors) noexcept {
 }
 
 }  // namespace
+
+std::vector<std::string> highlight_terms(const SearchResult& result) {
+  std::vector<std::string> out;
+  auto add = [&](const std::string& term) {
+    if (std::ranges::find(out, term) == out.end()) {
+      out.push_back(term);
+    }
+  };
+  for (const QueryPhrase& ph : result.phrases) {
+    for (const auto& term : ph.terms) {
+      add(term);
+    }
+  }
+  for (const QueryTerm& qt : result.terms) {
+    add(qt.term);
+  }
+  return out;
+}
 
 Searcher::Searcher(const index::InvertedIndex& index, ranking::Bm25Params params)
     : index_(&index),

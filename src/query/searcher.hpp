@@ -39,6 +39,10 @@ struct SearchResult {
   std::size_t matched = 0;           // documents that satisfied the query
 };
 
+// Every analysed term worth highlighting in a result: free words and phrase
+// words, de-duplicated, in query order.
+[[nodiscard]] std::vector<std::string> highlight_terms(const SearchResult& result);
+
 // Runs ranked queries against an index.
 //
 // Query semantics (docs/DECISIONS.md D-015):

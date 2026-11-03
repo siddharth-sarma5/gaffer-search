@@ -28,12 +28,15 @@
 #include <string_view>
 #include <vector>
 
+#include <unistd.h>  // isatty
+
 #include "common/error.hpp"
 #include "corpus/corpus.hpp"
 #include "index/index_file.hpp"
 #include "index/inverted_index.hpp"
 #include "query/searcher.hpp"
 #include "ranking/bm25.hpp"
+#include "snippet/snippet.hpp"
 #include "text/analyzer.hpp"
 
 namespace {
@@ -41,7 +44,6 @@ namespace {
 using Clock = std::chrono::steady_clock;
 
 constexpr std::string_view kDefaultCorpus = "data/corpus/pl-2025-26.tsv";
-constexpr std::size_t kPreviewChars = 110;
 
 struct Options {
   std::string command;
@@ -138,17 +140,23 @@ double ms_since(Clock::time_point start) {
   return std::chrono::duration<double, std::milli>(Clock::now() - start).count();
 }
 
-// First ~110 chars of the body, cut at a space so we never split a UTF-8 sequence.
-std::string preview(const std::string& body) {
-  if (body.size() <= kPreviewChars) {
-    return body;
+// Highlight markers: bold yellow on a terminal, **markdown** when piped to a
+// file or another program (readable in logs, and easy to grep in tests).
+struct Markers {
+  std::string_view open;
+  std::string_view close;
+};
+
+Markers markers() {
+  if (isatty(STDOUT_FILENO) != 0) {
+    return {"\033[1;33m", "\033[0m"};
   }
-  const std::size_t cut = body.rfind(' ', kPreviewChars);
-  return body.substr(0, cut == std::string::npos ? kPreviewChars : cut) + " ...";
+  return {"**", "**"};
 }
 
-void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::query::SearchResult& r,
-                   std::string_view query, double elapsed_ms) {
+void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::text::Analyzer& analyzer,
+                   const gaffer::query::SearchResult& r, std::string_view query,
+                   double elapsed_ms) {
   std::cout << std::format("\nAsk the Gaffer: \"{}\"\n", query);
   std::string terms;
   for (const auto& ph : r.phrases) {
@@ -167,12 +175,15 @@ void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::query::Se
     std::cout << std::format("Goalless: no documents matched. ({:.2f} ms)\n", elapsed_ms);
     return;
   }
+  const auto highlight = gaffer::query::highlight_terms(r);
+  const Markers mark = markers();
   for (std::size_t i = 0; i < r.hits.size(); ++i) {
     const auto& hit = r.hits[i];
     const auto& doc = corpus[hit.doc];
     std::cout << std::format("{:>3}. {:<52} {:>7.3f}  {}\n", i + 1, doc.title, hit.score,
                              gaffer::corpus::to_string(doc.type));
-    std::cout << std::format("     {}\n", preview(doc.body));
+    const auto snip = gaffer::snippet::make_snippet(doc.body, analyzer, highlight);
+    std::cout << std::format("     {}\n", gaffer::snippet::render(snip, mark.open, mark.close));
   }
   std::cout << std::format("\nFull-time: {} of {} matching documents in {:.2f} ms\n", r.hits.size(),
                            r.matched, elapsed_ms);
@@ -228,10 +239,11 @@ int run(const Options& opt) {
   }
 
   const gaffer::query::Searcher searcher(index, opt.bm25);
+  const gaffer::text::Analyzer analyzer(index.analyzer_options());  // for snippets
   auto answer = [&](std::string_view q) {
     const auto t0 = Clock::now();
     const auto result = searcher.search(q, opt.k);
-    print_results(corpus, result, q, ms_since(t0));
+    print_results(corpus, analyzer, result, q, ms_since(t0));
   };
 
   if (opt.query) {

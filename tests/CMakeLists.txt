@@ -60,3 +60,9 @@ add_test(NAME cli.index_corpus_mismatch
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_tests_properties(cli.index_corpus_mismatch PROPERTIES LABELS cli FIXTURES_REQUIRED saved_index
   WILL_FAIL TRUE)
+gaffer_add_test(snippet_test snippet/snippet_test.cpp)
+add_test(NAME cli.snippet_highlight
+  COMMAND gaffer search "late winner at anfield" -k 1
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(cli.snippet_highlight PROPERTIES LABELS cli
+  PASS_REGULAR_EXPRESSION "scored a \\*\\*late\\*\\* \\*\\*winner\\*\\*")

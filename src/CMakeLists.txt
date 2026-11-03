@@ -15,6 +15,7 @@ add_library(gaffer_core STATIC
   query/searcher.cpp
   query/top_k.cpp
   ranking/bm25.cpp
+  snippet/snippet.cpp
   text/analyzer.cpp
   text/ascii_fold.cpp
   text/stemmer.cpp

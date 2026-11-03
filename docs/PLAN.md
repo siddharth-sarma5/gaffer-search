@@ -126,7 +126,7 @@ results-only historical corpus for scale; `gaffer-bench`; a precision@k/MRR eval
 - [x] 6. `feat(index): delta-encode doc ids and positions in compressed postings`
 - [x] 7. `feat(index): write versioned on-disk index format with CRC32`
 - [x] 8. `feat(index): load and validate on-disk index; reject corrupt files`
-- [ ] 9. `feat(snippet): select best snippet window and highlight matched terms`
+- [x] 9. `feat(snippet): select best snippet window and highlight matched terms`
 - [ ] 10. `feat(query): expand club nicknames with down-weighted synonym terms`
 - [ ] 11. `feat(ranking): add VAR review per-term score explanations`
 - [ ] 12. `feat(corpusgen): add results-only historical seasons for the scale corpus`
