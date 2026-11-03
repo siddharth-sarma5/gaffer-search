@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
 CLANG_FORMAT="${CLANG_FORMAT:-clang-format}"
-mapfile -t files < <(git ls-files '*.cpp' '*.hpp')
+mapfile -t files < <(git ls-files --cached --others --exclude-standard '*.cpp' '*.hpp')
 if [[ ${#files[@]} -eq 0 ]]; then
   exit 0
 fi

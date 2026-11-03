@@ -72,7 +72,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 8. `feat(corpusgen): generate club, player and season documents`
 - [x] 9. `test(corpusgen): cover parser edge cases and tag derivation; run in CI`
 - [x] 10. `feat(data): commit generated 2025-26 corpus with measured doc/token counts`
-- [ ] 11. `feat(corpus): add Document type and TSV corpus loader with error reporting`
+- [x] 11. `feat(corpus): add Document type and TSV corpus loader with error reporting`
 - [ ] 12. `feat(text): add UTF-8 aware tokenizer with ASCII folding`
 - [ ] 13. `feat(text): add stopword filter, S-stemmer and Analyzer pipeline`
 - [ ] 14. `feat(index): add in-memory inverted index with collection statistics`

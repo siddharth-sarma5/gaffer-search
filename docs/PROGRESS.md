@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(data): commit generated 2025-26 corpus with measured doc/token counts`.
+- **Last commit:** `feat(corpus): add Document type and TSV corpus loader with error reporting`.
 
 ## Next step
-- M1-11: C++ Document type and TSV corpus loader.
+- M1-12: UTF-8 aware tokenizer with ASCII folding.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

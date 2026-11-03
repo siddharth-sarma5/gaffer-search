@@ -1,0 +1,4 @@
+# Corpus and raw data must keep LF endings byte-for-byte: CI compares the
+# generated corpus with cmp, and the vendored source has a recorded SHA-256.
+*.tsv          text eol=lf
+data/raw/**    -text

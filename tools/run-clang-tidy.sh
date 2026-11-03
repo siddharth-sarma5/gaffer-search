@@ -14,7 +14,7 @@ fi
 # Only our translation units (src/, apps/). Headers are covered via
 # HeaderFilterRegex in .clang-tidy. Tests are skipped: GoogleTest macros trip
 # many style checks that don't apply to test code.
-mapfile -t files < <(git ls-files 'src/*.cpp' 'apps/*.cpp')
+mapfile -t files < <(git ls-files --cached --others --exclude-standard 'src/*.cpp' 'apps/*.cpp')
 if [[ ${#files[@]} -eq 0 ]]; then
   exit 0
 fi

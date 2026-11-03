@@ -1,0 +1,50 @@
+#pragma once
+
+#include <cstddef>
+#include <filesystem>
+#include <istream>
+#include <optional>
+#include <span>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
+
+#include "common/types.hpp"
+#include "corpus/document.hpp"
+
+namespace gaffer::corpus {
+
+// An immutable, in-memory collection of documents. Position = DocId.
+class Corpus {
+ public:
+  Corpus() = default;
+  // Throws gaffer::Error if keys are duplicated or there are too many docs for DocId.
+  explicit Corpus(std::vector<Document> docs);
+
+  [[nodiscard]] std::size_t size() const noexcept { return docs_.size(); }
+  [[nodiscard]] bool empty() const noexcept { return docs_.empty(); }
+  // Precondition: id < size(). Checked with assert in debug builds.
+  [[nodiscard]] const Document& operator[](DocId id) const noexcept;
+  [[nodiscard]] std::span<const Document> documents() const noexcept { return docs_; }
+  [[nodiscard]] std::optional<DocId> find(std::string_view key) const;
+
+ private:
+  std::vector<Document> docs_;
+  std::unordered_map<std::string, DocId> by_key_;
+};
+
+// Reverses the corpus writer's escaping: "\\t" -> TAB, "\\n" -> LF, "\\\\" -> '\'.
+// Returns std::nullopt on a dangling or unknown escape.
+[[nodiscard]] std::optional<std::string> unescape_field(std::string_view field);
+
+// Parses the TSV corpus format (tools/corpusgen/corpusgen/tsv.py):
+//   "# gaffer-corpus v1" header, then "key\ttype\ttitle\tbody" per line.
+// `source` names the input in error messages. Throws gaffer::ParseError with a
+// line number on malformed input.
+[[nodiscard]] Corpus load_tsv(std::istream& in, std::string_view source);
+
+// Opens and parses a corpus file. Throws gaffer::IoError if it can't be opened.
+[[nodiscard]] Corpus load_tsv_file(const std::filesystem::path& path);
+
+}  // namespace gaffer::corpus

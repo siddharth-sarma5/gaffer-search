@@ -2,6 +2,8 @@
 # module (corpus/, text/, index/, ...) adds its sources here as it lands.
 add_library(gaffer_core STATIC
   common/error.cpp
+  corpus/corpus.cpp
+  corpus/document.cpp
 )
 
 # Headers are included relative to src/, e.g. #include "text/tokenizer.hpp".
