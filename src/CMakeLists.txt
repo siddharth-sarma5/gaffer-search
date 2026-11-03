@@ -8,6 +8,7 @@ add_library(gaffer_core STATIC
   eval/metrics.cpp
   index/index_file.cpp
   index/inverted_index.cpp
+  index/partition.cpp
   index/posting_cursor.cpp
   index/postings_codec.cpp
   index/varint.cpp

@@ -94,6 +94,42 @@ std::uint64_t fingerprint(const Corpus& corpus) noexcept {
   return h;
 }
 
+std::string escape_field(std::string_view field) {
+  std::string out;
+  out.reserve(field.size());
+  for (const char c : field) {
+    switch (c) {
+      case '\\':
+        out += "\\\\";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      default:
+        out.push_back(c);
+    }
+  }
+  return out;
+}
+
+void write_tsv_file(const Corpus& corpus, const std::filesystem::path& path) {
+  std::ofstream out(path, std::ios::binary | std::ios::trunc);
+  if (!out) {
+    throw IoError("cannot create corpus file '" + path.string() + "'");
+  }
+  out << kHeader << '\n';
+  for (const Document& d : corpus.documents()) {
+    out << escape_field(d.key) << '\t' << to_string(d.type) << '\t' << escape_field(d.title) << '\t'
+        << escape_field(d.body) << '\n';
+  }
+  if (!out) {
+    throw IoError("failed writing corpus file '" + path.string() + "'");
+  }
+}
+
 std::optional<std::string> unescape_field(std::string_view field) {
   std::string out;
   out.reserve(field.size());

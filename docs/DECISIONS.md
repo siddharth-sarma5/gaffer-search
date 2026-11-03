@@ -129,3 +129,12 @@ approved) or **Proposed** (Claude's recommendation; Sid approved the plan as a w
 - **Golden file**: the e2e golden keeps measuring plain BM25 (no expander), so expansion changes
   are tested separately and the baseline stays comparable. 0.7 will be checked by the M2-14
   relevance evaluation.
+
+### D-019 · 2026-11-03 · Partition round-robin by DocId — Proposed (M3)
+- **Options:** (a) round-robin `shard = g mod N`; (b) hash of the document key; (c) contiguous
+  ranges.
+- **Why (a):** shards are balanced within one document; `global = local x N + shard` needs no
+  lookup table; and order within a shard matches global order, so per-shard tie-breaks agree with
+  single-node tie-breaks (required for exact equivalence). (b) keeps assignments stable when
+  documents are inserted, which matters for mutable indexes; ours are rebuilt in full.
+  (c) would skew load (all 2025-26 docs in one shard).

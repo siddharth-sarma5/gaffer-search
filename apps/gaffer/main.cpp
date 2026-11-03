@@ -2,12 +2,15 @@
 //
 //   gaffer index  [options]            build the index, print collection stats
 //                 [--out PATH]         ...and save it as a compressed index file
+//   gaffer partition --shards N --out-dir DIR
+//                                      split into N shards: shard-<i>.tsv/.gaffer + manifest.tsv
 //   gaffer search [options] "<query>"  one query, ranked results
 //                 [--index PATH]       ...using a saved index instead of rebuilding
 //   gaffer search [options]            interactive: one query per line on stdin
 //
 // Options:
-//   --corpus PATH      corpus TSV (default: $GAFFER_CORPUS or data/corpus/pl-2025-26.tsv)
+//   --corpus PATH      corpus TSV; repeat to combine several (default: $GAFFER_CORPUS or
+//                      data/corpus/pl-2025-26.tsv)
 //   -k N               results to show (default 10)
 //   --k1 X, --b X      BM25 parameters (default 1.2, 0.75)
 //   --no-stem          disable the S-stemmer
@@ -21,10 +24,12 @@
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <span>
@@ -38,6 +43,7 @@
 #include "corpus/corpus.hpp"
 #include "index/index_file.hpp"
 #include "index/inverted_index.hpp"
+#include "index/partition.hpp"
 #include "query/nicknames.hpp"
 #include "query/searcher.hpp"
 #include "ranking/bm25.hpp"
@@ -53,9 +59,11 @@ constexpr std::string_view kDefaultNicknames = "data/nicknames.tsv";
 
 struct Options {
   std::string command;
-  std::string corpus_path;
-  std::optional<std::string> index_out;  // gaffer index --out PATH
-  std::optional<std::string> index_in;   // gaffer search --index PATH
+  std::vector<std::filesystem::path> corpora;  // --corpus may repeat; loaded in order
+  std::uint32_t shards = 0;                    // gaffer partition --shards N
+  std::string out_dir;                         // gaffer partition --out-dir DIR
+  std::optional<std::string> index_out;        // gaffer index --out PATH
+  std::optional<std::string> index_in;         // gaffer search --index PATH
   std::string nicknames_path{kDefaultNicknames};
   bool nicknames_explicit = false;  // a missing file is only an error if the user named it
   bool expand = true;
@@ -72,7 +80,8 @@ class UsageError : public gaffer::Error {
 };
 
 constexpr std::string_view kUsage =
-    "usage: gaffer index  [--corpus PATH] [--out INDEX] [--no-stem] [--keep-stopwords]\n"
+    "usage: gaffer index  [--corpus PATH]... [--out INDEX] [--no-stem] [--keep-stopwords]\n"
+    "       gaffer partition --shards N --out-dir DIR [--corpus PATH]...\n"
     "       gaffer search [--corpus PATH] [--index INDEX] [-k N] [--k1 X] [--b X] [--no-stem]\n"
     "                     [--keep-stopwords] [--nicknames PATH] [--no-expand] [--var]\n"
     "                     [\"query\"]\n";
@@ -104,13 +113,14 @@ std::size_t parse_count(std::string_view flag, const std::string& value) {
 }
 
 Options parse_args(const std::vector<std::string>& args) {
-  if (args.empty() || (args[0] != "index" && args[0] != "search")) {
-    throw UsageError("expected a command: index or search");
+  if (args.empty() || (args[0] != "index" && args[0] != "search" && args[0] != "partition")) {
+    throw UsageError("expected a command: index, search or partition");
   }
   Options opt;
   opt.command = args[0];
   const char* env_corpus = std::getenv("GAFFER_CORPUS");  // NOLINT(concurrency-mt-unsafe)
-  opt.corpus_path = env_corpus != nullptr ? env_corpus : std::string(kDefaultCorpus);
+  const std::filesystem::path default_corpus =
+      env_corpus != nullptr ? env_corpus : std::string(kDefaultCorpus);
 
   for (std::size_t i = 1; i < args.size(); ++i) {
     const std::string& a = args[i];
@@ -121,7 +131,11 @@ Options parse_args(const std::vector<std::string>& args) {
       return args[++i];
     };
     if (a == "--corpus") {
-      opt.corpus_path = value();
+      opt.corpora.emplace_back(value());
+    } else if (a == "--shards" && opt.command == "partition") {
+      opt.shards = static_cast<std::uint32_t>(parse_count(a, value()));
+    } else if (a == "--out-dir" && opt.command == "partition") {
+      opt.out_dir = value();
     } else if (a == "--out" && opt.command == "index") {
       opt.index_out = value();
     } else if (a == "--index" && opt.command == "search") {
@@ -151,7 +165,47 @@ Options parse_args(const std::vector<std::string>& args) {
       throw UsageError(std::format("unexpected argument '{}'", a));
     }
   }
+  if (opt.corpora.empty()) {
+    opt.corpora.push_back(default_corpus);
+  }
+  if (opt.command == "partition" && (opt.shards == 0 || opt.out_dir.empty())) {
+    throw UsageError("partition needs --shards N and --out-dir DIR");
+  }
   return opt;
+}
+
+std::string corpus_names(const Options& opt) {
+  std::string s;
+  for (const auto& c : opt.corpora) {
+    s += (s.empty() ? "" : " + ") + c.string();
+  }
+  return s;
+}
+
+// gaffer partition: split the corpus round-robin into N shards and write, per
+// shard, its corpus file and its index (built with the shard's own local
+// statistics; the broker supplies global ones at query time).
+int run_partition(const Options& opt, const gaffer::corpus::Corpus& corpus) {
+  std::filesystem::create_directories(opt.out_dir);
+  const auto parts = gaffer::index::partition(corpus, opt.shards);
+  std::ofstream manifest(std::filesystem::path(opt.out_dir) / "manifest.tsv");
+  manifest << std::format("# {} shards of {} ({} docs), round-robin by DocId\n", opt.shards,
+                          corpus_names(opt), corpus.size());
+  manifest << "# shard\tnum_shards\tdocs\tcorpus\tindex\n";
+  for (std::uint32_t s = 0; s < opt.shards; ++s) {
+    const auto base = std::filesystem::path(opt.out_dir) / std::format("shard-{}", s);
+    const auto tsv = std::filesystem::path(base).replace_extension(".tsv");
+    const auto idx_path = std::filesystem::path(base).replace_extension(".gaffer");
+    gaffer::corpus::write_tsv_file(parts[s], tsv);
+    const auto idx = gaffer::index::build_index(parts[s], gaffer::text::Analyzer{opt.analyzer});
+    const auto stats =
+        gaffer::index::write_index_file(idx, gaffer::corpus::fingerprint(parts[s]), idx_path);
+    manifest << std::format("{}\t{}\t{}\t{}\t{}\n", s, opt.shards, parts[s].size(),
+                            tsv.filename().string(), idx_path.filename().string());
+    std::cout << std::format("shard {}: {} docs, index {} bytes -> {}\n", s, parts[s].size(),
+                             stats.file_bytes, idx_path.string());
+  }
+  return 0;
 }
 
 double ms_since(Clock::time_point start) {
@@ -236,8 +290,11 @@ void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::text::Ana
 
 int run(const Options& opt) {
   auto start = Clock::now();
-  const auto corpus = gaffer::corpus::load_tsv_file(opt.corpus_path);
+  const auto corpus = gaffer::corpus::load_tsv_files(opt.corpora);
   const double load_ms = ms_since(start);
+  if (opt.command == "partition") {
+    return run_partition(opt, corpus);
+  }
 
   // Either load a saved index (gaffer search --index) or build one from the corpus.
   start = Clock::now();
@@ -246,7 +303,7 @@ int run(const Options& opt) {
     auto loaded = gaffer::index::load_index_file(*opt.index_in);
     if (loaded.corpus_fingerprint != gaffer::corpus::fingerprint(corpus)) {
       throw gaffer::Error(std::format("index '{}' was built from a different corpus than '{}'",
-                                      *opt.index_in, opt.corpus_path));
+                                      *opt.index_in, corpus_names(opt)));
     }
     index = std::move(loaded.index);
   } else {
@@ -265,7 +322,7 @@ int run(const Options& opt) {
         "  tokens:         {}\n"
         "  avg doc length: {:.1f} tokens\n"
         "  load: {:.1f} ms   index: {:.1f} ms\n",
-        opt.corpus_path, s.doc_count, index.term_count(), index.posting_count(),
+        corpus_names(opt), s.doc_count, index.term_count(), index.posting_count(),
         index.position_count(), s.total_length, s.avg_doc_length(), load_ms, index_ms);
     if (opt.index_out) {
       start = Clock::now();

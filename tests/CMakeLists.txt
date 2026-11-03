@@ -12,7 +12,8 @@ gaffer_add_test(common_test common/error_test.cpp common/crc32_test.cpp)
 gaffer_add_test(corpus_test corpus/corpus_test.cpp)
 gaffer_add_test(text_test text/tokenizer_test.cpp text/analyzer_test.cpp)
 gaffer_add_test(index_test index/inverted_index_test.cpp index/posting_cursor_test.cpp
-  index/varint_test.cpp index/postings_codec_test.cpp index/index_file_test.cpp)
+  index/varint_test.cpp index/postings_codec_test.cpp index/index_file_test.cpp
+  index/partition_test.cpp)
 gaffer_add_test(ranking_test ranking/bm25_test.cpp)
 gaffer_add_test(query_test query/top_k_test.cpp query/searcher_test.cpp
   query/query_parser_test.cpp query/phrase_test.cpp query/nicknames_test.cpp)
@@ -85,3 +86,8 @@ gaffer_add_test(eval_test eval/metrics_test.cpp)
 gaffer_add_test(net_test net/socket_test.cpp net/messages_test.cpp)
 add_test(NAME eval.smoke COMMAND gaffer-eval WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_tests_properties(eval.smoke PROPERTIES LABELS eval PASS_REGULAR_EXPRESSION "default .* MRR|MRR")
+add_test(NAME cli.partition
+  COMMAND gaffer partition --shards 3 --out-dir ${CMAKE_CURRENT_BINARY_DIR}/shards
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(cli.partition PROPERTIES LABELS cli
+  PASS_REGULAR_EXPRESSION "shard 2: 312 docs")

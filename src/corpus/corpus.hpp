@@ -40,6 +40,13 @@ class Corpus {
 // Fast and well distributed for this purpose; not cryptographic.
 [[nodiscard]] std::uint64_t fingerprint(const Corpus& corpus) noexcept;
 
+// Writes a corpus in the TSV format load_tsv reads (header, escaped fields).
+// Used to write per-shard corpus files. Throws gaffer::IoError on failure.
+void write_tsv_file(const Corpus& corpus, const std::filesystem::path& path);
+
+// The corpus writer's escaping: '\\' -> "\\\\", TAB -> "\\t", LF -> "\\n".
+[[nodiscard]] std::string escape_field(std::string_view field);
+
 // Reverses the corpus writer's escaping: "\\t" -> TAB, "\\n" -> LF, "\\\\" -> '\'.
 // Returns std::nullopt on a dangling or unknown escape.
 [[nodiscard]] std::optional<std::string> unescape_field(std::string_view field);
