@@ -1,0 +1,20 @@
+# Google style with a 100-column limit. clang-format, not reviewers, settles
+# layout questions.
+BasedOnStyle: Google
+Language: Cpp
+Standard: c++20
+ColumnLimit: 100
+IncludeBlocks: Regroup
+IncludeCategories:
+  # 1. the header this .cpp implements (main include, handled automatically)
+  # 2. C++ standard library
+  - Regex: '^<[a-z_]+>$'
+    Priority: 2
+  # 3. third-party (gtest, ...)
+  - Regex: '^<.*>$'
+    Priority: 3
+  # 4. our own headers
+  - Regex: '^".*"$'
+    Priority: 4
+DerivePointerAlignment: false
+PointerAlignment: Left

@@ -16,9 +16,7 @@ TEST(ParseErrorTest, IsCatchableAsGafferError) {
   EXPECT_THROW(throw ParseError("x", 1, "bad"), Error);
 }
 
-TEST(IoErrorTest, IsCatchableAsGafferError) {
-  EXPECT_THROW(throw IoError("cannot open"), Error);
-}
+TEST(IoErrorTest, IsCatchableAsGafferError) { EXPECT_THROW(throw IoError("cannot open"), Error); }
 
 }  // namespace
 }  // namespace gaffer

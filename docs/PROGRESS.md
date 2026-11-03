@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `build: add CMake project, presets (debug/asan-ubsan/release) and GoogleTest via FetchContent`.
+- **Last commit:** `style: add clang-format and clang-tidy configuration`.
 
 ## Next step
-- M1-3: clang-format and clang-tidy configuration.
+- M1-4: GitHub Actions CI.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
