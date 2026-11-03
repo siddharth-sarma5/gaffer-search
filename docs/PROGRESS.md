@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `feat(net): add RAII socket wrappers and deadline-aware read_exact/write_all`.
+- **Last commit:** `feat(net): add length-prefixed framing and versioned message codec`.
 
 ## Next step
-- M3-2: length-prefixed framing and versioned message codec.
+- M3-3: codec round-trip and malformed/oversized frame tests.
 
 ## Open questions
 - None right now.

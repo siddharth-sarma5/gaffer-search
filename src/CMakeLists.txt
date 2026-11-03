@@ -11,6 +11,8 @@ add_library(gaffer_core STATIC
   index/posting_cursor.cpp
   index/postings_codec.cpp
   index/varint.cpp
+  net/framing.cpp
+  net/messages.cpp
   net/socket.cpp
   query/nicknames.cpp
   query/phrase.cpp
