@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(query): add term-at-a-time evaluation with bounded min-heap top-k`.
+- **Last commit:** `feat(cli): add gaffer CLI with index and search commands and themed output`.
 
 ## Next step
-- M1-17: gaffer CLI with index and search commands.
+- M1-18: end-to-end golden query tests.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

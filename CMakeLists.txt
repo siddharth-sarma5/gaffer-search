@@ -30,6 +30,7 @@ include(Sanitizers)
 gaffer_enable_sanitizers("${GAFFER_SANITIZE}")
 
 add_subdirectory(src)
+add_subdirectory(apps)
 
 if(GAFFER_BUILD_TESTS)
   enable_testing()
