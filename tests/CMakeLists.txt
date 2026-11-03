@@ -15,7 +15,7 @@ gaffer_add_test(index_test index/inverted_index_test.cpp index/posting_cursor_te
   index/varint_test.cpp index/postings_codec_test.cpp index/index_file_test.cpp)
 gaffer_add_test(ranking_test ranking/bm25_test.cpp)
 gaffer_add_test(query_test query/top_k_test.cpp query/searcher_test.cpp
-  query/query_parser_test.cpp query/phrase_test.cpp)
+  query/query_parser_test.cpp query/phrase_test.cpp query/nicknames_test.cpp)
 gaffer_add_test(e2e_test e2e/e2e_test.cpp)
 
 # CLI smoke tests: run the real binary and check its output and exit codes.
@@ -66,3 +66,8 @@ add_test(NAME cli.snippet_highlight
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_tests_properties(cli.snippet_highlight PROPERTIES LABELS cli
   PASS_REGULAR_EXPRESSION "scored a \\*\\*late\\*\\* \\*\\*winner\\*\\*")
+add_test(NAME cli.nickname_expansion
+  COMMAND gaffer search "gunners late winner" -k 1
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(cli.nickname_expansion PROPERTIES LABELS cli
+  PASS_REGULAR_EXPRESSION "arsenal \\(df [0-9]+, from \"gunners\" x0.7\\)")

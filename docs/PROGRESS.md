@@ -4,11 +4,11 @@
 then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
-- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 1 (M2-1..5) done; waiting for Sid before batch 2. M1 done (19/19).
-- **Last commit:** `feat(snippet): select best snippet window and highlight matched terms`.
+- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batches 1-2 (M2-1..10) done; waiting for Sid before batch 3 (M2-11..15). M1 done (19/19).
+- **Last commit:** `feat(query): expand club nicknames with down-weighted synonym terms`.
 
 ## Next step
-- M2-10: club nickname expansion with down-weighted synonym terms.
+- Sid reviews M2 batch 2 (commits 6-10); batch 3 starts at M2-11 (VAR review explanations).
 
 ## Open questions
 - None right now.

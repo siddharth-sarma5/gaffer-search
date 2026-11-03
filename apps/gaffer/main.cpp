@@ -12,6 +12,8 @@
 //   --k1 X, --b X      BM25 parameters (default 1.2, 0.75)
 //   --no-stem          disable the S-stemmer
 //   --keep-stopwords   index stopwords too
+//   --nicknames PATH   club nickname file (default data/nicknames.tsv, if present)
+//   --no-expand        don't expand nicknames ("gunners" -> Arsenal)
 //
 // Exit codes: 0 ok, 1 runtime error (bad corpus file...), 2 usage error.
 
@@ -20,6 +22,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <format>
 #include <iostream>
 #include <optional>
@@ -34,6 +37,7 @@
 #include "corpus/corpus.hpp"
 #include "index/index_file.hpp"
 #include "index/inverted_index.hpp"
+#include "query/nicknames.hpp"
 #include "query/searcher.hpp"
 #include "ranking/bm25.hpp"
 #include "snippet/snippet.hpp"
@@ -44,12 +48,16 @@ namespace {
 using Clock = std::chrono::steady_clock;
 
 constexpr std::string_view kDefaultCorpus = "data/corpus/pl-2025-26.tsv";
+constexpr std::string_view kDefaultNicknames = "data/nicknames.tsv";
 
 struct Options {
   std::string command;
   std::string corpus_path;
   std::optional<std::string> index_out;  // gaffer index --out PATH
   std::optional<std::string> index_in;   // gaffer search --index PATH
+  std::string nicknames_path{kDefaultNicknames};
+  bool nicknames_explicit = false;  // a missing file is only an error if the user named it
+  bool expand = true;
   std::optional<std::string> query;
   std::size_t k = 10;
   gaffer::ranking::Bm25Params bm25;
@@ -64,7 +72,7 @@ class UsageError : public gaffer::Error {
 constexpr std::string_view kUsage =
     "usage: gaffer index  [--corpus PATH] [--out INDEX] [--no-stem] [--keep-stopwords]\n"
     "       gaffer search [--corpus PATH] [--index INDEX] [-k N] [--k1 X] [--b X] [--no-stem]\n"
-    "                     [--keep-stopwords] [\"query\"]\n";
+    "                     [--keep-stopwords] [--nicknames PATH] [--no-expand] [\"query\"]\n";
 
 double parse_double(std::string_view flag, const std::string& value) {
   try {
@@ -115,6 +123,11 @@ Options parse_args(const std::vector<std::string>& args) {
       opt.index_out = value();
     } else if (a == "--index" && opt.command == "search") {
       opt.index_in = value();
+    } else if (a == "--nicknames" && opt.command == "search") {
+      opt.nicknames_path = value();
+      opt.nicknames_explicit = true;
+    } else if (a == "--no-expand" && opt.command == "search") {
+      opt.expand = false;
     } else if (a == "-k") {
       opt.k = parse_count(a, value());
     } else if (a == "--k1") {
@@ -167,7 +180,12 @@ void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::text::Ana
     terms += std::format("{}\"{}\" (phrase, required)", terms.empty() ? "" : ", ", words);
   }
   for (const auto& t : r.terms) {
-    terms += std::format("{}{} (df {})", terms.empty() ? "" : ", ", t.term, t.doc_freq);
+    if (t.expanded_from.empty()) {
+      terms += std::format("{}{} (df {})", terms.empty() ? "" : ", ", t.term, t.doc_freq);
+    } else {
+      terms += std::format("{}{} (df {}, from \"{}\" x{:.1f})", terms.empty() ? "" : ", ", t.term,
+                           t.doc_freq, t.expanded_from, t.weight);
+    }
   }
   std::cout << std::format("Kick-off: {}\n\n", terms.empty() ? "no searchable terms" : terms);
 
@@ -238,7 +256,11 @@ int run(const Options& opt) {
     return 0;
   }
 
-  const gaffer::query::Searcher searcher(index, opt.bm25);
+  gaffer::query::NicknameExpander expander;
+  if (opt.expand && (opt.nicknames_explicit || std::filesystem::exists(opt.nicknames_path))) {
+    expander = gaffer::query::NicknameExpander::load_tsv_file(opt.nicknames_path);
+  }
+  const gaffer::query::Searcher searcher(index, opt.bm25, opt.expand ? &expander : nullptr);
   const gaffer::text::Analyzer analyzer(index.analyzer_options());  // for snippets
   auto answer = [&](std::string_view q) {
     const auto t0 = Clock::now();

@@ -116,3 +116,16 @@ approved) or **Proposed** (Claude's recommendation; Sid approved the plan as a w
   `advance_to` fast.
 - **Measured (M2-6):** 2025-26 corpus postings: 1,107,264 B fixed-width uint32 → 237,406 B
   delta+varint (21.4%).
+
+### D-018 · 2026-11-03 · Nickname expansion design — Proposed (M2)
+- **Matching on raw tokens** (lower-cased, accent-folded, not stemmed): the stemmer maps
+  "reds" -> "red", so matching after stemming would expand "red card" to Liverpool.
+- **Additive, down-weighted (x0.7)**: the typed word stays (it matches the club page that lists
+  the nickname), and the expansion adds the club name at 0.7, because it's a guess about intent.
+  Typed words are never demoted (expansion runs after all typed words are collected).
+- **Free words only**; quoted phrases stay literal. Ambiguous aliases ("blues", "wanderers")
+  are left out of `data/nicknames.tsv`: a wrong expansion hurts precision more than a missing one
+  hurts recall.
+- **Golden file**: the e2e golden keeps measuring plain BM25 (no expander), so expansion changes
+  are tested separately and the baseline stays comparable. 0.7 will be checked by the M2-14
+  relevance evaluation.

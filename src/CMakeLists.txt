@@ -10,6 +10,7 @@ add_library(gaffer_core STATIC
   index/posting_cursor.cpp
   index/postings_codec.cpp
   index/varint.cpp
+  query/nicknames.cpp
   query/phrase.cpp
   query/query_parser.cpp
   query/searcher.cpp

@@ -1,0 +1,37 @@
+# Club nicknames and short names -> full club name, for query expansion (M2-10).
+# Format: alias<TAB>expansion. Matching is case- and accent-insensitive on whole
+# words, longest alias first. Hand-curated common knowledge; see
+# tools/corpusgen/corpusgen/clubs.py for the same clubs.
+#
+# Deliberately left out: ambiguous aliases such as "blues" (Chelsea? Everton?
+# Birmingham?) and "wanderers" (Wolves? Bolton?). A wrong expansion costs more
+# precision than a missing one costs recall.
+gunners	Arsenal
+villans	Aston Villa
+cherries	Bournemouth
+bees	Brentford
+seagulls	Brighton & Hove Albion
+clarets	Burnley
+eagles	Crystal Palace
+palace	Crystal Palace
+toffees	Everton
+cottagers	Fulham
+peacocks	Leeds United
+reds	Liverpool
+citizens	Manchester City
+cityzens	Manchester City
+sky blues	Manchester City
+man city	Manchester City
+red devils	Manchester United
+man utd	Manchester United
+man united	Manchester United
+magpies	Newcastle United
+toon	Newcastle United
+tricky trees	Nottingham Forest
+forest	Nottingham Forest
+black cats	Sunderland
+spurs	Tottenham Hotspur
+lilywhites	Tottenham Hotspur
+hammers	West Ham United
+irons	West Ham United
+wolves	Wolverhampton Wanderers

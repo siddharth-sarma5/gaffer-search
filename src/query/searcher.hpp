@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "index/inverted_index.hpp"
+#include "query/nicknames.hpp"
 #include "query/query_parser.hpp"
 #include "query/top_k.hpp"
 #include "ranking/bm25.hpp"
@@ -14,13 +15,15 @@
 
 namespace gaffer::query {
 
-// A distinct analysed query term (from a free-words clause) and how often it
-// appeared in the query.
+// A distinct analysed query term (from a free-words clause or a nickname
+// expansion) and how often it appeared in the query.
 struct QueryTerm {
   std::string term;
   std::uint32_t query_tf;
   std::uint32_t doc_freq;
   double idf;
+  double weight = 1.0;        // multiplier on its BM25 contribution (< 1 for expansions)
+  std::string expanded_from;  // the alias it came from ("gunners"), empty if typed
 };
 
 // An analysed quoted phrase.
@@ -53,7 +56,9 @@ struct SearchResult {
 //  * With at least one phrase, only documents containing all phrases match;
 //    free words then only add to the score.
 //
-// Scoring: BM25. Each free word contributes query_tf * bm25(idf, tf, len). Each
+// Scoring: BM25. Each free word contributes query_tf * weight * bm25(idf, tf,
+// len), where weight is 1 for typed words and kExpansionWeight for nickname
+// expansions. Each
 // phrase is scored as one pseudo-term, with tf = number of occurrences and
 // idf = sum of its words' idfs (as Lucene does). Phrase words are not also
 // scored individually, which would count them twice.
@@ -69,7 +74,10 @@ struct SearchResult {
 // Non-owning: the index must outlive the Searcher.
 class Searcher {
  public:
-  explicit Searcher(const index::InvertedIndex& index, ranking::Bm25Params params = {});
+  // `expander` is optional; when given, free words that are club nicknames add
+  // the club's name as extra terms weighted kExpansionWeight. Non-owning.
+  explicit Searcher(const index::InvertedIndex& index, ranking::Bm25Params params = {},
+                    const NicknameExpander* expander = nullptr);
 
   [[nodiscard]] SearchResult search(std::string_view query, std::size_t k) const;
 
@@ -83,6 +91,7 @@ class Searcher {
   void search_with_phrases(SearchResult& result, TopK& top) const;
 
   const index::InvertedIndex* index_;
+  const NicknameExpander* expander_;
   text::Analyzer analyzer_;
   ranking::Bm25 bm25_;
 };

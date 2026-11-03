@@ -21,6 +21,7 @@
 
 #include "corpus/corpus.hpp"
 #include "index/inverted_index.hpp"
+#include "query/nicknames.hpp"
 #include "query/searcher.hpp"
 #include "text/analyzer.hpp"
 
@@ -127,6 +128,21 @@ TEST_F(RealCorpusTest, PhraseQueriesOnlyReturnAdjacentMatches) {
   for (const auto& key : engine_->top_keys("\"late winner\"", 100)) {
     const auto& doc = engine_->corpus[*engine_->corpus.find(key)];
     EXPECT_NE(doc.body.find("late winner"), std::string::npos) << key;
+  }
+}
+
+TEST_F(RealCorpusTest, NicknameExpansionFindsTheClub) {
+  const auto expander = query::NicknameExpander::load_tsv_file("data/nicknames.tsv");
+  const query::Searcher s(engine_->index, {}, &expander);
+  // Without expansion "toffees" only finds Everton's club page (the one doc that
+  // says "Toffees"). With it, Everton's matches rank too.
+  EXPECT_EQ(engine_->top_keys("toffees", 10), (Keys{"club-everton"}));
+  const auto r = s.search("toffees", 10);
+  ASSERT_EQ(r.hits.size(), 10U);
+  EXPECT_EQ(engine_->corpus[r.hits[0].doc].key, "club-everton");
+  for (const auto& h : r.hits) {
+    EXPECT_NE(engine_->corpus[h.doc].body.find("Everton"), std::string::npos)
+        << engine_->corpus[h.doc].key;
   }
 }
 

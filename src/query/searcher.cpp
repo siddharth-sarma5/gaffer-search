@@ -12,6 +12,7 @@
 #include "common/types.hpp"
 #include "index/inverted_index.hpp"
 #include "index/posting_cursor.hpp"
+#include "query/nicknames.hpp"
 #include "query/phrase.hpp"
 #include "query/query_parser.hpp"
 #include "query/top_k.hpp"
@@ -75,13 +76,16 @@ std::vector<std::string> highlight_terms(const SearchResult& result) {
   return out;
 }
 
-Searcher::Searcher(const index::InvertedIndex& index, ranking::Bm25Params params)
+Searcher::Searcher(const index::InvertedIndex& index, ranking::Bm25Params params,
+                   const NicknameExpander* expander)
     : index_(&index),
+      expander_(expander),
       // Same analysis as the index, or query terms won't meet document terms.
       analyzer_(index.analyzer_options()),
       bm25_(params, index.stats().doc_count, index.stats().avg_doc_length()) {}
 
 void Searcher::analyze_clauses(SearchResult& result) const {
+  // Pass 1: phrases and the words the user typed.
   for (const Clause& clause : result.clauses) {
     const auto tokens = analyzer_.analyze(clause.text);
     if (clause.kind == ClauseKind::kPhrase) {
@@ -105,7 +109,29 @@ void Searcher::analyze_clauses(SearchResult& result) const {
         continue;
       }
       const std::uint32_t df = index_->doc_freq(tok.term);
-      result.terms.push_back(QueryTerm{tok.term, 1, df, bm25_.idf(df)});
+      result.terms.push_back(QueryTerm{tok.term, 1, df, bm25_.idf(df), 1.0, {}});
+    }
+  }
+
+  // Pass 2: nickname expansions of free words (phrases stay literal). Run after
+  // pass 1 so a word the user typed is never demoted to expansion weight just
+  // because an alias produced it first.
+  if (expander_ == nullptr) {
+    return;
+  }
+  for (const Clause& clause : result.clauses) {
+    if (clause.kind != ClauseKind::kTerms) {
+      continue;
+    }
+    for (const Expansion& e : expander_->find(clause.text)) {
+      for (const auto& tok : analyzer_.analyze(e.expansion)) {
+        if (std::ranges::find(result.terms, tok.term, &QueryTerm::term) != result.terms.end()) {
+          continue;  // already in the query (typed, or from another alias)
+        }
+        const std::uint32_t df = index_->doc_freq(tok.term);
+        result.terms.push_back(
+            QueryTerm{tok.term, 1, df, bm25_.idf(df), kExpansionWeight, e.alias});
+      }
     }
   }
 }
@@ -155,7 +181,7 @@ void Searcher::search_or(SearchResult& result, TopK& top) const {
         continue;
       }
       // Repeating a word in the query ("salah salah") weights it linearly.
-      const auto weight = static_cast<double>(result.terms[i].query_tf);
+      const double weight = static_cast<double>(result.terms[i].query_tf) * result.terms[i].weight;
       score += weight * bm25_.score(result.terms[i].idf, cursors[i].tf(), doc_length);
       cursors[i].next();
     }
@@ -204,7 +230,8 @@ void Searcher::search_with_phrases(SearchResult& result, TopK& top) const {
     for (std::size_t i = 0; i < optional.size(); ++i) {
       optional[i].advance_to(doc);  // candidate docs only increase, so this is safe
       if (optional[i].doc() == doc) {
-        const auto weight = static_cast<double>(result.terms[i].query_tf);
+        const double weight =
+            static_cast<double>(result.terms[i].query_tf) * result.terms[i].weight;
         score += weight * bm25_.score(result.terms[i].idf, optional[i].tf(), doc_length);
       }
     }

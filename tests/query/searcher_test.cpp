@@ -162,6 +162,58 @@ TEST_F(PhraseSearchTest, UnknownWordOrStopwordOnlyPhrase) {
   EXPECT_EQ(hit_docs(Searcher(idx_).search("\"the\" haaland", 10)), (std::vector<DocId>{4}));
 }
 
+class ExpansionTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    index::IndexBuilder b{text::Analyzer{}};
+    b.add("Arsenal won the match");   // 0
+    b.add("The Gunners celebrated");  // 1
+    b.add("Chelsea won the match");   // 2
+    idx_ = std::move(b).build();
+  }
+  index::InvertedIndex idx_;
+  NicknameExpander expander_{{{"gunners", "Arsenal"}}};
+};
+
+TEST_F(ExpansionTest, AliasAddsDownWeightedExpansionTerm) {
+  const SearchResult r = Searcher(idx_, {}, &expander_).search("gunners", 10);
+  ASSERT_EQ(r.terms.size(), 2U);
+  EXPECT_EQ(r.terms[0].term, "gunner");
+  EXPECT_DOUBLE_EQ(r.terms[0].weight, 1.0);
+  EXPECT_EQ(r.terms[1].term, "arsenal");
+  EXPECT_DOUBLE_EQ(r.terms[1].weight, kExpansionWeight);
+  EXPECT_EQ(r.terms[1].expanded_from, "gunners");
+  EXPECT_EQ(hit_docs(r), (std::vector<DocId>{0, 1}));
+
+  // The expansion's contribution is exactly kExpansionWeight times plain BM25.
+  const ranking::Bm25 bm({}, idx_.stats().doc_count, idx_.stats().avg_doc_length());
+  for (const auto& h : r.hits) {
+    if (h.doc == 0) {
+      EXPECT_NEAR(h.score, kExpansionWeight * bm.score(bm.idf(1), 1, idx_.doc_length(0)), 1e-12);
+    }
+  }
+}
+
+TEST_F(ExpansionTest, WithoutExpanderNothingIsAdded) {
+  EXPECT_EQ(hit_docs(Searcher(idx_).search("gunners", 10)), (std::vector<DocId>{1}));
+}
+
+TEST_F(ExpansionTest, TypedTermKeepsFullWeight) {
+  // "arsenal" is typed AND produced by the alias: it must stay at weight 1.
+  const SearchResult r = Searcher(idx_, {}, &expander_).search("gunners arsenal", 10);
+  const auto it = std::ranges::find(r.terms, std::string("arsenal"), &QueryTerm::term);
+  ASSERT_NE(it, r.terms.end());
+  EXPECT_DOUBLE_EQ(it->weight, 1.0);
+  EXPECT_TRUE(it->expanded_from.empty());
+  EXPECT_EQ(r.terms.size(), 2U);  // no duplicate
+}
+
+TEST_F(ExpansionTest, PhrasesAreNotExpanded) {
+  const SearchResult r = Searcher(idx_, {}, &expander_).search("\"gunners celebrated\"", 10);
+  EXPECT_TRUE(r.terms.empty());
+  EXPECT_EQ(hit_docs(r), (std::vector<DocId>{1}));
+}
+
 // Property test: DAAT search equals exhaustive scoring of every document.
 // Random documents over a tiny vocabulary give lots of overlap and ties.
 TEST(SearcherPropertyTest, MatchesBruteForceScoring) {
