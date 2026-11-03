@@ -47,6 +47,16 @@ std::span<const Posting> InvertedIndex::postings(std::string_view term) const {
   return posting_list(term).postings();
 }
 
+std::vector<std::string_view> InvertedIndex::sorted_terms() const {
+  std::vector<std::string_view> terms;
+  terms.reserve(postings_.size());
+  for (const auto& [term, list] : postings_) {
+    terms.emplace_back(term);
+  }
+  std::ranges::sort(terms);
+  return terms;
+}
+
 std::uint32_t InvertedIndex::doc_freq(std::string_view term) const {
   // Each document appears at most once per postings list, so df = list length.
   return static_cast<std::uint32_t>(postings(term).size());

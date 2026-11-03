@@ -123,7 +123,7 @@ results-only historical corpus for scale; `gaffer-bench`; a precision@k/MRR eval
 - [x] 3. `feat(query): add query parser supporting quoted phrases`
 - [x] 4. `feat(query): match phrases by positional intersection`
 - [x] 5. `feat(index): add LEB128 varint codec`
-- [ ] 6. `feat(index): delta-encode doc ids and positions in compressed postings`
+- [x] 6. `feat(index): delta-encode doc ids and positions in compressed postings`
 - [ ] 7. `feat(index): write versioned on-disk index format with CRC32`
 - [ ] 8. `feat(index): load and validate on-disk index; reject corrupt files`
 - [ ] 9. `feat(snippet): select best snippet window and highlight matched terms`

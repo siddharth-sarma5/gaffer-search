@@ -95,6 +95,8 @@ class InvertedIndex {
   [[nodiscard]] std::size_t term_count() const noexcept { return postings_.size(); }
   [[nodiscard]] std::size_t posting_count() const noexcept { return posting_count_; }
   [[nodiscard]] std::size_t position_count() const noexcept { return position_count_; }
+  // Every term in the index, sorted (deterministic order for serialisation and tests).
+  [[nodiscard]] std::vector<std::string_view> sorted_terms() const;
   // The analysis the index was built with. Queries must use the same.
   [[nodiscard]] const text::AnalyzerOptions& analyzer_options() const noexcept {
     return analyzer_options_;

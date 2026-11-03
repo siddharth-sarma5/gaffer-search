@@ -12,7 +12,7 @@ gaffer_add_test(common_test common/error_test.cpp)
 gaffer_add_test(corpus_test corpus/corpus_test.cpp)
 gaffer_add_test(text_test text/tokenizer_test.cpp text/analyzer_test.cpp)
 gaffer_add_test(index_test index/inverted_index_test.cpp index/posting_cursor_test.cpp
-  index/varint_test.cpp)
+  index/varint_test.cpp index/postings_codec_test.cpp)
 gaffer_add_test(ranking_test ranking/bm25_test.cpp)
 gaffer_add_test(query_test query/top_k_test.cpp query/searcher_test.cpp
   query/query_parser_test.cpp query/phrase_test.cpp)

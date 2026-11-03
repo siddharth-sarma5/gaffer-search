@@ -100,3 +100,19 @@ approved) or **Proposed** (Claude's recommendation; Sid approved the plan as a w
   (c) needs every candidate to be checked before any scoring, which defeats DAAT streaming.
 - **Evaluation:** leapfrog intersection of phrase-word cursors with galloping `advance_to`.
   Positions are checked only for docs containing every word.
+
+### D-016 · 2026-11-03 · Benchmark corpus: all earlier seasons, results only — Agreed
+- **Options:** (a) 1992-93 to 2024-25 Premier League results-only docs as a separate scale corpus;
+  (b) 2025-26 Championship/League One/League Two results; (c) synthetic scale-up.
+- **Decision (Sid):** (a), all previous seasons, used for benchmarks (commit M2-12). The rich
+  2025-26 corpus stays the relevance-evaluation corpus. Same CC0 source (openfootball/england).
+
+### D-017 · 2026-11-03 · Compressed on disk, decoded at load — Proposed (M2)
+- **Options:** (a) keep postings compressed in memory and decode inside the cursor as it
+  advances; (b) store compressed on disk, decode everything into PostingLists at load time.
+- **Why (b):** the search path stays exactly as tested (PostingCursor over plain arrays), and the
+  disk/transfer saving is where compression pays off for this corpus size. Load-time decoding is
+  measured in M2-13. (a) is listed as a stretch item: it would need per-block skip data to keep
+  `advance_to` fast.
+- **Measured (M2-6):** 2025-26 corpus postings: 1,107,264 B fixed-width uint32 → 237,406 B
+  delta+varint (21.4%).

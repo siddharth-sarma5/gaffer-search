@@ -5,15 +5,13 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 1 (M2-1..5) done; waiting for Sid before batch 2. M1 done (19/19).
-- **Last commit:** `feat(index): add LEB128 varint codec`.
+- **Last commit:** `feat(index): delta-encode doc ids and positions in compressed postings`.
 
 ## Next step
-- Sid reviews M2 batch 1 (commits 1-5); next batch starts at M2-6 (delta-encoded compressed postings).
+- M2-7: write versioned on-disk index format with CRC32.
 
 ## Open questions
-- **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
-  results-only docs (~13k) as a separate *scale corpus* for benchmarks, and keep the 2025-26
-  corpus for relevance evaluation.
+- None right now.
 
 ## Known issues / notes
 - Bag-of-words limits recorded in the golden file (tests/golden/pl-2025-26-top5.txt):

@@ -6,6 +6,7 @@ add_library(gaffer_core STATIC
   corpus/document.cpp
   index/inverted_index.cpp
   index/posting_cursor.cpp
+  index/postings_codec.cpp
   index/varint.cpp
   query/phrase.cpp
   query/query_parser.cpp
