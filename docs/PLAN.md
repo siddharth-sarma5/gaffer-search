@@ -64,7 +64,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 2. `build: add CMake project, presets (debug/asan-ubsan/release) and GoogleTest via FetchContent`
 - [x] 3. `style: add clang-format and clang-tidy configuration`
 - [x] 4. `ci: build and test with GCC and Clang under ASan/UBSan; check format and tidy`
-- [ ] 5. `chore(data): vendor pinned openfootball 2025-26 Premier League file with provenance`
+- [x] 5. `chore(data): vendor pinned openfootball 2025-26 Premier League file with provenance`
 - [ ] 6. `feat(corpusgen): parse match blocks (date, venue, attendance, score, scorers, cards, referees)`
 - [ ] 7. `feat(corpusgen): derive match tags and write match documents`
 - [ ] 8. `feat(corpusgen): generate club and player documents`

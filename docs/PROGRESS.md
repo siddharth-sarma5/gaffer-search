@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `ci: build and test with GCC and Clang under ASan/UBSan; check format and tidy`.
+- **Last commit:** `chore(data): vendor pinned openfootball 2025-26 Premier League file with provenance`.
 
 ## Next step
-- M1-5: vendor pinned openfootball 2025-26 data.
+- M1-6: corpusgen match-block parser.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
