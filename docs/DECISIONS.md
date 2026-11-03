@@ -151,3 +151,16 @@ approved) or **Proposed** (Claude's recommendation; Sid approved the plan as a w
 - **Exactness:** avgdl uses the same formula on the same totals, idf the same df, and scoring the
   same summation order, so a shard's score equals the single-node score bit for bit. Tested on
   every evaluation query, against a local-stats control that fails.
+
+### D-021 · 2026-11-03 · Server I/O: reactor + worker pool; broker fans out thread-per-shard — Proposed (M3)
+- **Server options:** (a) thread per connection; (b) poll()-based reactor handing ready
+  connections to a worker pool; (c) a full async framework (epoll + coroutines, or Asio).
+- **Why (b):** (a) was built first and failed a test: the broker pools keep-alive connections,
+  so idle pooled connections pinned every worker and new connections starved until they timed
+  out. With (b) an idle connection costs a pollfd, not a thread. (c) is more scalable (poll is
+  O(connections) per wake-up; epoll isn't) but adds a dependency or much more code. At our scale
+  (a broker's pool, a few dozen connections) poll() is fine. epoll is the noted upgrade path.
+- **Broker fan-out:** one std::jthread per shard per query, each writing its own result slot.
+  It's simple, race-free and bounded by the shared deadline. The cost is thread creation per
+  query (tens of microseconds, measured in M3-12). A persistent pool is the optimisation if that
+  matters.

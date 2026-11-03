@@ -9,3 +9,6 @@ target_link_libraries(gaffer-eval PRIVATE gaffer_core gaffer_warnings)
 
 add_executable(gaffer-shard gaffer-shard/main.cpp)
 target_link_libraries(gaffer-shard PRIVATE gaffer_core gaffer_warnings)
+
+add_executable(gaffer-broker gaffer-broker/main.cpp)
+target_link_libraries(gaffer-broker PRIVATE gaffer_core gaffer_warnings)

@@ -22,8 +22,10 @@ add_library(gaffer_core STATIC
   query/searcher.cpp
   query/top_k.cpp
   ranking/bm25.cpp
+  server/broker.cpp
   server/global_stats.cpp
   server/shard_server.cpp
+  server/tcp_server.cpp
   snippet/snippet.cpp
   text/analyzer.cpp
   text/ascii_fold.cpp

@@ -50,7 +50,7 @@ TEST(ShardServerTest, AnswersSearchOverTcp) {
 }
 
 TEST(ShardServerTest, GlobalDocIdsFollowThePartitionMapping) {
-  const auto server = start_server({.shard_id = 2, .num_shards = 3});
+  const auto server = start_server({.shard_id = 2, .num_shards = 3, .tcp = {}});
   const auto reply =
       net::call("127.0.0.1", server->port(), net::ShardSearchRequest{"salah", 10, 0, 0, {}},
                 net::Deadline::after(2s));
@@ -95,6 +95,30 @@ TEST(ShardServerTest, GarbageGetsAnErrorAndTheServerKeepsServing) {
   EXPECT_TRUE(ok.has_value());
 }
 
+// Regression test for the thread-per-connection starvation bug: more idle
+// keep-alive connections than workers must not block new clients.
+TEST(ShardServerTest, IdleConnectionsDoNotStarveNewClients) {
+  ShardServerOptions opts;
+  opts.tcp.worker_threads = 2;
+  const auto server = start_server(opts);
+  std::vector<net::Fd> idle;
+  for (int i = 0; i < 6; ++i) {
+    idle.push_back(net::connect_tcp("127.0.0.1", server->port(), net::Deadline::after(1s)));
+    // Use each once, then leave it open and idle, as the broker's pool does.
+    ASSERT_TRUE(net::exchange(idle.back(), net::ShardSearchRequest{"salah", 1, 0, 0, {}},
+                              net::Deadline::after(2s)));
+  }
+  const auto t0 = std::chrono::steady_clock::now();
+  const auto reply =
+      net::call("127.0.0.1", server->port(), net::ShardSearchRequest{"salah", 1, 0, 0, {}},
+                net::Deadline::after(2s));
+  EXPECT_TRUE(reply.has_value());
+  EXPECT_LT(std::chrono::steady_clock::now() - t0, 500ms);
+  // And the idle ones are still usable afterwards.
+  EXPECT_TRUE(net::exchange(idle.front(), net::ShardSearchRequest{"salah", 1, 0, 0, {}},
+                            net::Deadline::after(2s)));
+}
+
 TEST(ShardServerTest, UnsupportedRequestGetsError) {
   const auto server = start_server();
   EXPECT_TRUE(std::holds_alternative<net::ErrorMessage>(server->handle(net::SearchRequest{})));
@@ -113,9 +137,9 @@ TEST(ShardServerTest, StopIsPromptEvenWithIdleConnections) {
 TEST(ShardServerTest, RejectsInconsistentConfiguration) {
   auto corpus = corpus::load_tsv_file("tests/fixtures/mini_corpus.tsv");
   auto index = index::build_index(corpus, text::Analyzer{});
-  EXPECT_THROW(
-      ShardServer(std::move(corpus), std::move(index), {}, {.shard_id = 3, .num_shards = 3}),
-      Error);
+  EXPECT_THROW(ShardServer(std::move(corpus), std::move(index), {},
+                           {.shard_id = 3, .num_shards = 3, .tcp = {}}),
+               Error);
 }
 
 }  // namespace

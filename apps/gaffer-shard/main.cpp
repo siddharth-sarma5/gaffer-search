@@ -36,8 +36,8 @@ struct Args {
 
 Args parse(std::span<char*> argv) {
   Args a;
-  a.server.host = "0.0.0.0";
-  a.server.port = 7001;
+  a.server.tcp.host = "0.0.0.0";
+  a.server.tcp.port = 7001;
   for (std::size_t i = 1; i < argv.size(); ++i) {
     const std::string_view f = argv[i];
     auto value = [&]() -> std::string {
@@ -53,15 +53,15 @@ Args parse(std::span<char*> argv) {
     } else if (f == "--nicknames") {
       a.nicknames = value();
     } else if (f == "--host") {
-      a.server.host = value();
+      a.server.tcp.host = value();
     } else if (f == "--port") {
-      a.server.port = static_cast<std::uint16_t>(std::stoul(value()));
+      a.server.tcp.port = static_cast<std::uint16_t>(std::stoul(value()));
     } else if (f == "--shard-id") {
       a.server.shard_id = static_cast<std::uint32_t>(std::stoul(value()));
     } else if (f == "--num-shards") {
       a.server.num_shards = static_cast<std::uint32_t>(std::stoul(value()));
     } else if (f == "--threads") {
-      a.server.worker_threads = std::stoul(value());
+      a.server.tcp.worker_threads = std::stoul(value());
     } else if (f == "--delay-ms") {
       a.server.search_delay = std::chrono::milliseconds(std::stoul(value()));
     } else {
@@ -99,7 +99,7 @@ int run(Args args) {
                                      std::move(expander), args.server);
   server.start();
   std::cerr << std::format("gaffer-shard {}/{}: {} docs, listening on {}:{}\n",
-                           args.server.shard_id, args.server.num_shards, docs, args.server.host,
+                           args.server.shard_id, args.server.num_shards, docs, args.server.tcp.host,
                            server.port());
   int sig = 0;
   sigwait(&signals, &sig);

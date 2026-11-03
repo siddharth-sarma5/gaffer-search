@@ -6,6 +6,7 @@
 //                                      split into N shards: shard-<i>.tsv/.gaffer + manifest.tsv
 //   gaffer search [options] "<query>"  one query, ranked results
 //                 [--index PATH]       ...using a saved index instead of rebuilding
+//                 [--broker HOST:PORT] ...sent to a running cluster (gaffer-broker)
 //   gaffer search [options]            interactive: one query per line on stdin
 //
 // Options:
@@ -35,6 +36,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include <unistd.h>  // isatty
@@ -44,9 +46,13 @@
 #include "index/index_file.hpp"
 #include "index/inverted_index.hpp"
 #include "index/partition.hpp"
+#include "net/messages.hpp"
+#include "net/rpc.hpp"
+#include "net/socket.hpp"
 #include "query/nicknames.hpp"
 #include "query/searcher.hpp"
 #include "ranking/bm25.hpp"
+#include "server/broker.hpp"
 #include "snippet/snippet.hpp"
 #include "text/analyzer.hpp"
 
@@ -64,6 +70,7 @@ struct Options {
   std::string out_dir;                         // gaffer partition --out-dir DIR
   std::optional<std::string> index_out;        // gaffer index --out PATH
   std::optional<std::string> index_in;         // gaffer search --index PATH
+  std::optional<std::string> broker;           // gaffer search --broker HOST:PORT
   std::string nicknames_path{kDefaultNicknames};
   bool nicknames_explicit = false;  // a missing file is only an error if the user named it
   bool expand = true;
@@ -82,7 +89,8 @@ class UsageError : public gaffer::Error {
 constexpr std::string_view kUsage =
     "usage: gaffer index  [--corpus PATH]... [--out INDEX] [--no-stem] [--keep-stopwords]\n"
     "       gaffer partition --shards N --out-dir DIR [--corpus PATH]...\n"
-    "       gaffer search [--corpus PATH] [--index INDEX] [-k N] [--k1 X] [--b X] [--no-stem]\n"
+    "       gaffer search [--corpus PATH] [--index INDEX] [--broker HOST:PORT] [-k N]\n"
+    "                     [--k1 X] [--b X] [--no-stem]\n"
     "                     [--keep-stopwords] [--nicknames PATH] [--no-expand] [--var]\n"
     "                     [\"query\"]\n";
 
@@ -140,6 +148,8 @@ Options parse_args(const std::vector<std::string>& args) {
       opt.index_out = value();
     } else if (a == "--index" && opt.command == "search") {
       opt.index_in = value();
+    } else if (a == "--broker" && opt.command == "search") {
+      opt.broker = value();
     } else if (a == "--nicknames" && opt.command == "search") {
       opt.nicknames_path = value();
       opt.nicknames_explicit = true;
@@ -288,7 +298,66 @@ void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::text::Ana
                            r.matched, elapsed_ms);
 }
 
+// Prints a cluster response (hits arrive already ranked, with snippets rendered
+// with ** markers by the shards).
+void print_cluster_results(const gaffer::net::SearchResponse& r, std::string_view query,
+                           double elapsed_ms) {
+  std::cout << std::format("\nAsk the Gaffer (cluster): \"{}\"\n\n", query);
+  for (std::size_t i = 0; i < r.hits.size(); ++i) {
+    const auto& h = r.hits[i];
+    std::cout << std::format("{:>3}. {:<52} {:>7.3f}  shard {}\n", i + 1, h.title, h.score,
+                             h.shard);
+    std::cout << std::format("     {}\n", h.snippet);
+  }
+  if (r.partial()) {
+    std::string missing;
+    for (const auto s : r.missing_shards) {
+      missing += (missing.empty() ? "" : ", ") + std::to_string(s);
+    }
+    std::cout << std::format("\nPARTIAL RESULTS: {} of {} shards answered in time (missing: {})\n",
+                             r.shards_total - r.missing_shards.size(), r.shards_total, missing);
+  }
+  std::cout << std::format(
+      "\nFull-time: {} of {} matching documents from {} shards in {:.2f} ms (broker {:.2f} ms)\n",
+      r.hits.size(), r.matched, r.shards_total, elapsed_ms, r.broker_ms);
+}
+
+// gaffer search --broker HOST:PORT: send the query to a running cluster.
+int run_remote(const Options& opt, const std::string& broker) {
+  const auto addr = gaffer::server::parse_address(broker);
+  auto ask = [&](std::string_view q) {
+    const auto t0 = Clock::now();
+    gaffer::net::IoStatus why = gaffer::net::IoStatus::kOk;
+    const auto reply = gaffer::net::call(
+        addr.host, addr.port,
+        gaffer::net::SearchRequest{std::string(q), static_cast<std::uint32_t>(opt.k)},
+        gaffer::net::Deadline::after(std::chrono::seconds(10)), &why);
+    if (!reply) {
+      throw gaffer::Error(
+          std::format("broker {} unreachable ({})", *opt.broker, gaffer::net::to_string(why)));
+    }
+    if (const auto* err = std::get_if<gaffer::net::ErrorMessage>(&*reply)) {
+      throw gaffer::Error("broker error: " + err->message);
+    }
+    print_cluster_results(std::get<gaffer::net::SearchResponse>(*reply), q, ms_since(t0));
+  };
+  if (opt.query) {
+    ask(*opt.query);
+    return 0;
+  }
+  std::string line;
+  while (std::cerr << "\ngaffer> " && std::getline(std::cin, line)) {
+    if (!line.empty()) {
+      ask(line);
+    }
+  }
+  return 0;
+}
+
 int run(const Options& opt) {
+  if (opt.broker.has_value()) {
+    return run_remote(opt, opt.broker.value());  // no local corpus or index needed
+  }
   auto start = Clock::now();
   const auto corpus = gaffer::corpus::load_tsv_files(opt.corpora);
   const double load_ms = ms_since(start);

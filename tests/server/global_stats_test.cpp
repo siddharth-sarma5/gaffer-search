@@ -67,9 +67,9 @@ class ShardedScoresTest : public ::testing::Test {
     auto parts = index::partition(*corpus_, kShards);
     for (std::uint32_t s = 0; s < kShards; ++s) {
       auto idx = index::build_index(parts[s], text::Analyzer{});
-      shards_.push_back(
-          std::make_unique<ShardServer>(std::move(parts[s]), std::move(idx), *expander_,
-                                        ShardServerOptions{.shard_id = s, .num_shards = kShards}));
+      shards_.push_back(std::make_unique<ShardServer>(
+          std::move(parts[s]), std::move(idx), *expander_,
+          ShardServerOptions{.shard_id = s, .num_shards = kShards, .tcp = {}}));
     }
   }
   static void TearDownTestSuite() {
