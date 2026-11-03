@@ -86,3 +86,17 @@ approved) or **Proposed** (Claude's recommendation; Sid approved the plan as a w
   (c) a two-round query (fetch df, then search); (d) approximate/sampled global stats.
 - **Why:** Indexes are immutable, so (b) is exact at zero per-query cost. (c) adds an RTT per
   query. (a) makes scores incomparable across shards. To be revisited if indexes become mutable.
+
+### D-015 · 2026-11-03 · Phrase query semantics and scoring — Proposed (M2)
+- **Semantics:** quoted phrases are *required* (AND), free words are *optional* (OR) and only add
+  score once all phrases match. A query without quotes behaves exactly as in M1.
+- **Adjacency:** analysed positions are compared, including stopword gaps:
+  `"stadium of light"` → offsets {0, 2}. Any stopword fills a gap ("Stadium and Light" also
+  matches), because stopwords aren't indexed. That's the cost of a smaller index.
+- **Scoring options:** (a) score phrase words individually and only filter on adjacency;
+  (b) score the phrase as one BM25 pseudo-term with tf = occurrences and idf = sum of member
+  idfs (Lucene's PhraseQuery); (c) compute an exact phrase df with an extra pass.
+- **Why (b):** one pass, no double counting of words, and rarer phrases still score higher.
+  (c) needs every candidate to be checked before any scoring, which defeats DAAT streaming.
+- **Evaluation:** leapfrog intersection of phrase-word cursors with galloping `advance_to`.
+  Positions are checked only for docs containing every word.

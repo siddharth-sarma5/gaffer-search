@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). M1 done (19/19).
-- **Last commit:** `feat(query): add query parser supporting quoted phrases`.
+- **Last commit:** `feat(query): match phrases by positional intersection`.
 
 ## Next step
-- M2-4: match phrases by positional intersection.
+- M2-5: LEB128 varint codec.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
@@ -17,7 +17,8 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Known issues / notes
 - Bag-of-words limits recorded in the golden file (tests/golden/pl-2025-26-top5.txt):
-  "north london derby" also ranks North West derbies 3rd and 4th (M2 phrase queries fix this);
+  "north london derby" also ranks North West derbies 3rd and 4th when unquoted; quoted
+  (M2-4), it returns exactly the two North London derbies;
   "own goal" is dominated by short player pages (consider tuning b in M2 evaluation).
 - S-stemmer: "matches" -> "matche" doesn't conflate with "match"; "reds" -> "red" collides with
   red cards. Both are documented and pinned by tests.

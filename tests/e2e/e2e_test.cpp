@@ -116,6 +116,20 @@ TEST_F(RealCorpusTest, AcceptanceHaalandBrace) {
   }
 }
 
+TEST_F(RealCorpusTest, PhraseQueriesOnlyReturnAdjacentMatches) {
+  // Unquoted, "north london derby" also ranks North West derbies (golden file).
+  // Quoted, it returns exactly the two North London derbies.
+  auto nld = engine_->top_keys("\"north london derby\"", 10);
+  std::ranges::sort(nld);
+  EXPECT_EQ(nld,
+            (Keys{"match-2025-11-23-arsenal-tottenham", "match-2026-02-22-tottenham-arsenal"}));
+
+  for (const auto& key : engine_->top_keys("\"late winner\"", 100)) {
+    const auto& doc = engine_->corpus[*engine_->corpus.find(key)];
+    EXPECT_NE(doc.body.find("late winner"), std::string::npos) << key;
+  }
+}
+
 // Queries covering every document type and the main derived tags.
 const std::vector<std::string> kGoldenQueries{
     "late winner at anfield",

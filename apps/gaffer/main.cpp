@@ -141,6 +141,13 @@ void print_results(const gaffer::corpus::Corpus& corpus, const gaffer::query::Se
                    std::string_view query, double elapsed_ms) {
   std::cout << std::format("\nAsk the Gaffer: \"{}\"\n", query);
   std::string terms;
+  for (const auto& ph : r.phrases) {
+    std::string words;
+    for (const auto& w : ph.terms) {
+      words += (words.empty() ? "" : " ") + w;
+    }
+    terms += std::format("{}\"{}\" (phrase, required)", terms.empty() ? "" : ", ", words);
+  }
   for (const auto& t : r.terms) {
     terms += std::format("{}{} (df {})", terms.empty() ? "" : ", ", t.term, t.doc_freq);
   }

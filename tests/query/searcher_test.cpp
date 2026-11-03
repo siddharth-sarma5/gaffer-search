@@ -89,6 +89,79 @@ TEST_F(SearcherTest, UsesTheIndexAnalyzerSettings) {
   EXPECT_EQ(Searcher(unstemmed).search("goals", 10).hits.size(), 1U);
 }
 
+std::vector<DocId> hit_docs(const SearchResult& r) {
+  std::vector<DocId> out;
+  for (const auto& h : r.hits) {
+    out.push_back(h.doc);
+  }
+  std::ranges::sort(out);
+  return out;
+}
+
+class PhraseSearchTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    index::IndexBuilder b{text::Analyzer{}};
+    b.add("Salah scored a late winner at Anfield");       // 0
+    b.add("A winner arrived late at the Etihad");         // 1: both words, not adjacent
+    b.add("Late winner, late winner! Stadium of Light");  // 2: phrase twice
+    b.add("Stadium and Light show");                      // 3: "and" is a stopword too
+    b.add("Haaland late winner");                         // 4
+    idx_ = std::move(b).build();
+  }
+  index::InvertedIndex idx_;
+};
+
+TEST_F(PhraseSearchTest, PhraseRequiresAdjacency) {
+  const SearchResult r = Searcher(idx_).search("\"late winner\"", 10);
+  EXPECT_EQ(hit_docs(r), (std::vector<DocId>{0, 2, 4}));
+  EXPECT_EQ(r.matched, 3U);
+  ASSERT_EQ(r.phrases.size(), 1U);
+  EXPECT_EQ(r.phrases[0].offsets, (std::vector<std::uint32_t>{0, 1}));
+  // The unquoted query also matches doc 1.
+  EXPECT_EQ(hit_docs(Searcher(idx_).search("late winner", 10)), (std::vector<DocId>{0, 1, 2, 4}));
+}
+
+TEST_F(PhraseSearchTest, StopwordGapsMustMatchButAnyStopwordFillsThem) {
+  // offsets {0, 2}: doc 2 ("of") and doc 3 ("and") both have a one-word gap.
+  EXPECT_EQ(hit_docs(Searcher(idx_).search("\"stadium of light\"", 10)),
+            (std::vector<DocId>{2, 3}));
+  EXPECT_TRUE(Searcher(idx_).search("\"stadium light\"", 10).hits.empty());
+}
+
+TEST_F(PhraseSearchTest, PhraseScoreIsBm25OfOccurrencesWithSummedIdf) {
+  const Searcher s(idx_);
+  const SearchResult r = s.search("\"late winner\"", 10);
+  const ranking::Bm25 bm({}, idx_.stats().doc_count, idx_.stats().avg_doc_length());
+  const double idf = bm.idf(idx_.doc_freq("late")) + bm.idf(idx_.doc_freq("winner"));
+  EXPECT_NEAR(r.phrases[0].idf, idf, 1e-12);
+  for (const auto& h : r.hits) {
+    const std::uint32_t occurrences = h.doc == 2 ? 2 : 1;
+    EXPECT_NEAR(h.score, bm.score(idf, occurrences, idx_.doc_length(h.doc)), 1e-12) << h.doc;
+  }
+}
+
+TEST_F(PhraseSearchTest, FreeWordsOnlyBoostDocsThatMatchThePhrase) {
+  const SearchResult r = Searcher(idx_).search("haaland \"late winner\"", 10);
+  EXPECT_EQ(hit_docs(r), (std::vector<DocId>{0, 2, 4}));
+  EXPECT_EQ(r.hits.front().doc, 4U);  // the only one that also has "haaland"
+}
+
+TEST_F(PhraseSearchTest, MultiplePhrasesAreAllRequired) {
+  EXPECT_EQ(hit_docs(Searcher(idx_).search("\"late winner\" \"stadium of light\"", 10)),
+            (std::vector<DocId>{2}));
+}
+
+TEST_F(PhraseSearchTest, UnknownWordOrStopwordOnlyPhrase) {
+  EXPECT_TRUE(Searcher(idx_).search("\"late mbappe\"", 10).hits.empty());
+  // A phrase of only stopwords imposes nothing; with nothing else, nothing matches.
+  const SearchResult r = Searcher(idx_).search("\"the\"", 10);
+  EXPECT_TRUE(r.phrases.empty());
+  EXPECT_TRUE(r.hits.empty());
+  // ...but alongside free words it's simply ignored.
+  EXPECT_EQ(hit_docs(Searcher(idx_).search("\"the\" haaland", 10)), (std::vector<DocId>{4}));
+}
+
 // Property test: DAAT search equals exhaustive scoring of every document.
 // Random documents over a tiny vocabulary give lots of overlap and ties.
 TEST(SearcherPropertyTest, MatchesBruteForceScoring) {
@@ -143,6 +216,43 @@ TEST(SearcherPropertyTest, MatchesBruteForceScoring) {
       EXPECT_EQ(r.hits[i].doc, all[i].doc) << "trial " << trial << " rank " << i;
       EXPECT_DOUBLE_EQ(r.hits[i].score, all[i].score) << "trial " << trial << " rank " << i;
     }
+  }
+}
+
+// Property test: phrase search returns exactly the docs where the two words are
+// adjacent, checked against a naive re-tokenisation of every document.
+TEST(SearcherPropertyTest, PhraseMatchesNaiveAdjacencyScan) {
+  const std::vector<std::string> vocab{"late", "winner", "salah", "goal", "red", "card"};
+  std::mt19937 rng(2025);
+  for (int trial = 0; trial < 50; ++trial) {
+    index::IndexBuilder b{text::Analyzer{}};
+    std::vector<std::vector<std::string>> docs;
+    const int n_docs = 1 + static_cast<int>(rng() % 40);
+    for (int d = 0; d < n_docs; ++d) {
+      std::vector<std::string> words;
+      std::string text;
+      for (std::uint32_t w = 0; w < rng() % 15; ++w) {
+        words.push_back(vocab[rng() % vocab.size()]);
+        text += words.back() + " ";
+      }
+      docs.push_back(words);
+      b.add(text);
+    }
+    const index::InvertedIndex idx = std::move(b).build();
+    const std::string w1 = vocab[rng() % vocab.size()];
+    const std::string w2 = vocab[rng() % vocab.size()];
+
+    std::vector<DocId> expected;
+    for (DocId d = 0; d < docs.size(); ++d) {
+      for (std::size_t i = 0; i + 1 < docs[d].size(); ++i) {
+        if (docs[d][i] == w1 && docs[d][i + 1] == w2) {
+          expected.push_back(d);
+          break;
+        }
+      }
+    }
+    const SearchResult r = Searcher(idx).search("\"" + w1 + " " + w2 + "\"", 1000);
+    EXPECT_EQ(hit_docs(r), expected) << "trial " << trial << " phrase " << w1 << " " << w2;
   }
 }
 
