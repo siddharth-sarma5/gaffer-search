@@ -80,7 +80,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 - [x] 15. `feat(ranking): add BM25 scorer`
 - [x] 16. `feat(query): add term-at-a-time evaluation with bounded min-heap top-k`
 - [x] 17. `feat(cli): add gaffer CLI with index and search commands and themed output`
-- [ ] 18. `test: add end-to-end golden query tests on a fixture corpus`
+- [x] 18. `test: add end-to-end golden query tests on a fixture corpus`
 - [ ] 19. `docs: write README quickstart and sample output; update architecture`
 
 **After M1 you should be able to explain:**

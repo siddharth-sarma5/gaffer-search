@@ -1,0 +1,7 @@
+# gaffer-corpus v1
+m-anfield	match	Liverpool 2-1 Everton	Merseyside derby at Anfield. Mohamed Salah scored a late winner in the 89th minute.
+m-etihad	match	Manchester City 3-0 Arsenal	At the Etihad. Erling Haaland scored a hat-trick. Arsenal were thrashed.
+m-emirates	match	Arsenal 1-1 Chelsea	London derby at the Emirates. Martin Ødegaard scored; Cole Palmer equalised late with penalties practised all week.
+p-salah	player	Mohamed Salah	Mohamed Salah, Liverpool. Goals: 20. Penalties: 4.
+p-odegaard	player	Martin Ødegaard	Martin Ødegaard, Arsenal captain.
+c-everton	club	Everton	Everton, nicknamed the Toffees. Home ground: Hill Dickinson Stadium.

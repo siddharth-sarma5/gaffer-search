@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(cli): add gaffer CLI with index and search commands and themed output`.
+- **Last commit:** `test: add end-to-end golden query tests on a fixture corpus`.
 
 ## Next step
-- M1-18: end-to-end golden query tests.
+- M1-19: README quickstart, sample output, architecture update.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
