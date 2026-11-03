@@ -61,7 +61,7 @@ the title plus the first line), nickname expansion, explanations, benchmarks.
 
 **Commits.**
 - [x] 1. `docs: add requirements, plan, decision log, progress tracker and architecture`
-- [ ] 2. `build: add CMake project, presets (debug/asan-ubsan/release) and GoogleTest via FetchContent`
+- [x] 2. `build: add CMake project, presets (debug/asan-ubsan/release) and GoogleTest via FetchContent`
 - [ ] 3. `style: add clang-format and clang-tidy configuration`
 - [ ] 4. `ci: build and test with GCC and Clang under ASan/UBSan; check format and tidy`
 - [ ] 5. `chore(data): vendor pinned openfootball 2025-26 Premier League file with provenance`

@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** M1-1 `docs: add requirements, plan, decision log, progress tracker and architecture`.
+- **Last commit:** `build: add CMake project, presets (debug/asan-ubsan/release) and GoogleTest via FetchContent`.
 
 ## Next step
-- M1-2: CMake project, presets and GoogleTest.
+- M1-3: clang-format and clang-tidy configuration.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

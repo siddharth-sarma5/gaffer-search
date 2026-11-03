@@ -1,0 +1,18 @@
+# Build trees (CMake presets put everything under build/<preset>)
+build/
+cmake-build-*/
+compile_commands.json
+
+# Generated index files and benchmark scratch output
+*.gaffer
+bench/out/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors / OS
+.vscode/
+.idea/
+.cache/
+.DS_Store
