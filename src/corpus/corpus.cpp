@@ -3,6 +3,7 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <istream>
@@ -69,6 +70,27 @@ std::optional<DocId> Corpus::find(std::string_view key) const {
     return std::nullopt;
   }
   return it->second;
+}
+
+std::uint64_t fingerprint(const Corpus& corpus) noexcept {
+  constexpr std::uint64_t kOffsetBasis = 14695981039346656037ULL;
+  constexpr std::uint64_t kPrime = 1099511628211ULL;
+  std::uint64_t h = kOffsetBasis;
+  auto mix = [&](std::string_view s) {
+    for (const char c : s) {
+      h ^= static_cast<unsigned char>(c);
+      h *= kPrime;
+    }
+    h ^= 0xFFU;  // field separator: ("ab","c") and ("a","bc") hash differently
+    h *= kPrime;
+  };
+  for (const Document& d : corpus.documents()) {
+    mix(d.key);
+    mix(to_string(d.type));
+    mix(d.title);
+    mix(d.body);
+  }
+  return h;
 }
 
 std::optional<std::string> unescape_field(std::string_view field) {

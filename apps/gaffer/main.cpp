@@ -1,6 +1,7 @@
 // gaffer: the Ask the Gaffer command-line tool.
 //
 //   gaffer index  [options]            build the index, print collection stats
+//                 [--out PATH]         ...and save it as a compressed index file
 //   gaffer search [options] "<query>"  one query, ranked results
 //   gaffer search [options]            interactive: one query per line on stdin
 //
@@ -13,6 +14,7 @@
 //
 // Exit codes: 0 ok, 1 runtime error (bad corpus file...), 2 usage error.
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
@@ -27,6 +29,7 @@
 
 #include "common/error.hpp"
 #include "corpus/corpus.hpp"
+#include "index/index_file.hpp"
 #include "index/inverted_index.hpp"
 #include "query/searcher.hpp"
 #include "ranking/bm25.hpp"
@@ -42,6 +45,7 @@ constexpr std::size_t kPreviewChars = 110;
 struct Options {
   std::string command;
   std::string corpus_path;
+  std::optional<std::string> index_out;  // gaffer index --out PATH
   std::optional<std::string> query;
   std::size_t k = 10;
   gaffer::ranking::Bm25Params bm25;
@@ -54,7 +58,7 @@ class UsageError : public gaffer::Error {
 };
 
 constexpr std::string_view kUsage =
-    "usage: gaffer index  [--corpus PATH] [--no-stem] [--keep-stopwords]\n"
+    "usage: gaffer index  [--corpus PATH] [--out INDEX] [--no-stem] [--keep-stopwords]\n"
     "       gaffer search [--corpus PATH] [-k N] [--k1 X] [--b X] [--no-stem]\n"
     "                     [--keep-stopwords] [\"query\"]\n";
 
@@ -103,6 +107,8 @@ Options parse_args(const std::vector<std::string>& args) {
     };
     if (a == "--corpus") {
       opt.corpus_path = value();
+    } else if (a == "--out" && opt.command == "index") {
+      opt.index_out = value();
     } else if (a == "-k") {
       opt.k = parse_count(a, value());
     } else if (a == "--k1") {
@@ -190,6 +196,19 @@ int run(const Options& opt) {
         "  load: {:.1f} ms   index: {:.1f} ms\n",
         opt.corpus_path, s.doc_count, index.term_count(), index.posting_count(),
         index.position_count(), s.total_length, s.avg_doc_length(), load_ms, index_ms);
+    if (opt.index_out) {
+      start = Clock::now();
+      const auto fs = gaffer::index::write_index_file(index, gaffer::corpus::fingerprint(corpus),
+                                                      *opt.index_out);
+      std::cout << std::format(
+          "Saved to {} in {:.1f} ms\n"
+          "  file size:      {} bytes\n"
+          "  postings:       {} bytes compressed, {} bytes as fixed-width uint32 ({:.1f}%)\n",
+          *opt.index_out, ms_since(start), fs.file_bytes, fs.postings_bytes,
+          fs.fixed_width_postings_bytes,
+          100.0 * static_cast<double>(fs.postings_bytes) /
+              static_cast<double>(std::max<std::size_t>(fs.fixed_width_postings_bytes, 1)));
+    }
     return 0;
   }
 

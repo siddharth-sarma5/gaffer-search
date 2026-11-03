@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <istream>
 #include <optional>
@@ -33,6 +34,11 @@ class Corpus {
   std::vector<Document> docs_;
   std::unordered_map<std::string, DocId> by_key_;
 };
+
+// 64-bit FNV-1a hash over every field of every document, in order. Stored in
+// index files so an index can't silently be used with a different corpus.
+// Fast and well distributed for this purpose; not cryptographic.
+[[nodiscard]] std::uint64_t fingerprint(const Corpus& corpus) noexcept;
 
 // Reverses the corpus writer's escaping: "\\t" -> TAB, "\\n" -> LF, "\\\\" -> '\'.
 // Returns std::nullopt on a dangling or unknown escape.

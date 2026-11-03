@@ -1,9 +1,11 @@
 # gaffer_core: the engine as a static library. Apps and tests link it; each
 # module (corpus/, text/, index/, ...) adds its sources here as it lands.
 add_library(gaffer_core STATIC
+  common/crc32.cpp
   common/error.cpp
   corpus/corpus.cpp
   corpus/document.cpp
+  index/index_file.cpp
   index/inverted_index.cpp
   index/posting_cursor.cpp
   index/postings_codec.cpp
