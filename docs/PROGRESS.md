@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `test(corpusgen): cover parser edge cases and tag derivation; run in CI`.
+- **Last commit:** `feat(data): commit generated 2025-26 corpus with measured doc/token counts`.
 
 ## Next step
-- M1-10: commit the generated corpus.
+- M1-11: C++ Document type and TSV corpus loader.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

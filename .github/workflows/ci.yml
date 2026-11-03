@@ -44,6 +44,13 @@ jobs:
           python-version: "3.12"
       - name: Unit tests
         run: python -m unittest discover -s tools/corpusgen/tests -t tools/corpusgen -v
+      - name: Committed corpus is up to date
+        working-directory: tools/corpusgen
+        run: |
+          python -m corpusgen \
+            --input ../../data/raw/openfootball/2025-26/1-premierleague-full.txt \
+            --output /tmp/pl-2025-26.tsv
+          cmp /tmp/pl-2025-26.tsv ../../data/corpus/pl-2025-26.tsv
 
   lint:
     name: clang-format / clang-tidy
