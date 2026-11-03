@@ -17,12 +17,34 @@
 
 namespace gaffer::index {
 
-std::span<const Posting> InvertedIndex::postings(std::string_view term) const {
+std::span<const std::uint32_t> PostingList::positions(std::size_t i) const noexcept {
+  assert(i < postings_.size());
+  return std::span(positions_).subspan(offsets_[i], offsets_[i + 1] - offsets_[i]);
+}
+
+void PostingList::append(DocId doc, std::span<const std::uint32_t> positions) {
+  assert(!positions.empty());
+  assert(postings_.empty() || postings_.back().doc < doc);
+  assert(std::ranges::is_sorted(positions));
+  positions_.insert(positions_.end(), positions.begin(), positions.end());
+  postings_.push_back(Posting{doc, static_cast<std::uint32_t>(positions.size())});
+  offsets_.push_back(static_cast<std::uint32_t>(positions_.size()));
+}
+
+void PostingList::shrink_to_fit() {
+  postings_.shrink_to_fit();
+  positions_.shrink_to_fit();
+  offsets_.shrink_to_fit();
+}
+
+const PostingList& InvertedIndex::posting_list(std::string_view term) const {
+  static const PostingList empty;        // returned for unknown terms; never modified
   const auto it = postings_.find(term);  // heterogeneous: no std::string built
-  if (it == postings_.end()) {
-    return {};
-  }
-  return it->second;
+  return it == postings_.end() ? empty : it->second;
+}
+
+std::span<const Posting> InvertedIndex::postings(std::string_view term) const {
+  return posting_list(term).postings();
 }
 
 std::uint32_t InvertedIndex::doc_freq(std::string_view term) const {
@@ -46,23 +68,31 @@ DocId IndexBuilder::add(std::string_view text) {
   const auto doc = static_cast<DocId>(index_.doc_lengths_.size());
   const std::vector<text::Token> tokens = analyzer_.analyze(text);
 
-  // Count term frequencies within this document. Keys are views into `tokens`,
-  // which outlives the map's use below, so no strings are copied here.
-  doc_tf_.clear();
+  // Group this document's tokens by term. A stable sort by term keeps each
+  // term's positions in ascending order (the tokenizer emits them ascending)
+  // and visits terms in sorted order, so builds are deterministic. Terms are
+  // views into `tokens`, which outlives `scratch_`'s use here.
+  scratch_.clear();
   for (const auto& tok : tokens) {
-    ++doc_tf_[tok.term];
+    scratch_.push_back(TermPosition{tok.term, tok.position});
   }
+  std::ranges::stable_sort(scratch_, {}, &TermPosition::term);
 
-  // Append one posting per distinct term. Docs arrive in increasing id order,
-  // so every postings list stays sorted without an explicit sort.
-  for (const auto& [term, tf] : doc_tf_) {
+  // One posting per distinct term. Docs arrive in increasing id order, so every
+  // postings list stays sorted without an explicit sort.
+  for (std::size_t i = 0; i < scratch_.size();) {
+    const std::string_view term = scratch_[i].term;
+    run_.clear();
+    for (; i < scratch_.size() && scratch_[i].term == term; ++i) {
+      run_.push_back(scratch_[i].position);
+    }
     auto it = index_.postings_.find(term);
     if (it == index_.postings_.end()) {
-      it = index_.postings_.emplace(std::string(term), std::vector<Posting>{}).first;
+      it = index_.postings_.emplace(std::string(term), PostingList{}).first;
     }
-    it->second.push_back(Posting{doc, tf});
+    it->second.append(doc, run_);
   }
-  doc_tf_.clear();  // drop views into `tokens` before it is destroyed
+  scratch_.clear();  // drop views into `tokens` before it is destroyed
 
   const auto length = static_cast<std::uint32_t>(tokens.size());
   index_.doc_lengths_.push_back(length);
@@ -72,13 +102,15 @@ DocId IndexBuilder::add(std::string_view text) {
 }
 
 InvertedIndex IndexBuilder::build() && {
-  std::size_t total = 0;
+  std::size_t postings = 0;
+  std::size_t positions = 0;
   for (auto& [term, list] : index_.postings_) {
     list.shrink_to_fit();  // builder over-allocates while growing; trim before freezing
-    total += list.size();
-    assert(std::ranges::is_sorted(list, {}, &Posting::doc));
+    postings += list.size();
+    positions += list.position_count();
   }
-  index_.posting_count_ = total;
+  index_.posting_count_ = postings;
+  index_.position_count_ = positions;
   return std::move(index_);
 }
 

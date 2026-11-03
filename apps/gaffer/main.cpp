@@ -177,11 +177,12 @@ int run(const Options& opt) {
         "  documents:      {}\n"
         "  terms:          {}\n"
         "  postings:       {}\n"
+        "  positions:      {}\n"
         "  tokens:         {}\n"
         "  avg doc length: {:.1f} tokens\n"
         "  load: {:.1f} ms   index: {:.1f} ms\n",
-        opt.corpus_path, s.doc_count, index.term_count(), index.posting_count(), s.total_length,
-        s.avg_doc_length(), load_ms, index_ms);
+        opt.corpus_path, s.doc_count, index.term_count(), index.posting_count(),
+        index.position_count(), s.total_length, s.avg_doc_length(), load_ms, index_ms);
     return 0;
   }
 

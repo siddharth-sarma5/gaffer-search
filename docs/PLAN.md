@@ -118,7 +118,7 @@ results-only historical corpus for scale; `gaffer-bench`; a precision@k/MRR eval
 - precision@5, precision@10 and MRR reported for the labelled query set.
 
 **Commits.**
-- [ ] 1. `feat(index): store term positions in postings`
+- [x] 1. `feat(index): store term positions in postings`
 - [ ] 2. `refactor(query): switch to document-at-a-time evaluation with postings cursors`
 - [ ] 3. `feat(query): add query parser supporting quoted phrases`
 - [ ] 4. `feat(query): match phrases by positional intersection`

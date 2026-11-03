@@ -1,6 +1,9 @@
 #include "index/inverted_index.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -57,6 +60,42 @@ TEST_F(SmallIndexTest, CollectionStats) {
   // Terms: salah score celebrate haaland twice etihad goal
   EXPECT_EQ(idx_.term_count(), 7U);
   EXPECT_EQ(idx_.posting_count(), 8U);
+}
+
+using Positions = std::vector<std::uint32_t>;
+
+Positions positions_of(const InvertedIndex& idx, std::string_view term, std::size_t i) {
+  const auto span = idx.posting_list(term).positions(i);
+  return {span.begin(), span.end()};
+}
+
+TEST_F(SmallIndexTest, PositionsAreRecordedPerPosting) {
+  // Doc 0 "Salah scores, Salah celebrates": salah at 0 and 2.
+  EXPECT_EQ(positions_of(idx_, "salah", 0), (Positions{0, 2}));
+  // "score" appears in doc 0 (pos 1) and doc 1 (pos 1).
+  EXPECT_EQ(positions_of(idx_, "score", 0), (Positions{1}));
+  EXPECT_EQ(positions_of(idx_, "score", 1), (Positions{1}));
+  EXPECT_EQ(positions_of(idx_, "goal", 0), (Positions{0, 1, 2}));
+}
+
+TEST_F(SmallIndexTest, StopwordsLeaveGapsInPositions) {
+  // Doc 1 "Haaland scores twice at the Etihad": at@3 and the@4 are dropped.
+  EXPECT_EQ(positions_of(idx_, "etihad", 0), (Positions{5}));
+}
+
+TEST_F(SmallIndexTest, TermFrequencyEqualsPositionCount) {
+  for (const auto* term : {"salah", "score", "goal", "etihad"}) {
+    const auto& list = idx_.posting_list(term);
+    for (std::size_t i = 0; i < list.size(); ++i) {
+      EXPECT_EQ(list.postings()[i].tf, list.positions(i).size()) << term;
+    }
+  }
+  EXPECT_EQ(idx_.position_count(), idx_.stats().total_length);
+}
+
+TEST_F(SmallIndexTest, UnknownTermGivesEmptyList) {
+  EXPECT_TRUE(idx_.posting_list("unknown").empty());
+  EXPECT_EQ(idx_.posting_list("unknown").position_count(), 0U);
 }
 
 TEST(IndexBuilderTest, EmptyDocumentGetsAnIdAndZeroLength) {

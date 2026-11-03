@@ -4,11 +4,11 @@
 then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
-- **Phase:** Milestone 1 complete (19/19 commits). Waiting for Sid's go-ahead to start Milestone 2.
-- **Last commit:** `docs: write README quickstart and sample output; update architecture`.
+- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). M1 done (19/19).
+- **Last commit:** `feat(index): store term positions in postings`.
 
 ## Next step
-- Sid reviews Milestone 1, then M2 starts at commit 1 (positional postings).
+- M2-2: switch to document-at-a-time evaluation with postings cursors.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

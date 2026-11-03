@@ -44,6 +44,39 @@ struct StringHash {
   }
 };
 
+// All occurrences of one term: a postings list plus the positions behind each posting.
+//
+// Layout (structure of arrays):
+//   postings_  [(d0, tf0), (d1, tf1), ...]          sorted by DocId
+//   positions_ [p.. of d0 | p.. of d1 | ...]        each run sorted ascending
+//   offsets_   [0, tf0, tf0+tf1, ...]                n+1 entries; run i = [offsets_[i],
+//   offsets_[i+1])
+// tf equals the number of positions, so offsets_ is just a prefix sum of tf.
+// It is stored so positions(i) is O(1) instead of O(i).
+// Keeping positions out of the Posting struct means BM25-only scans never
+// touch position data, and each array delta-encodes cleanly later (M2).
+class PostingList {
+ public:
+  PostingList() = default;
+
+  [[nodiscard]] std::size_t size() const noexcept { return postings_.size(); }
+  [[nodiscard]] bool empty() const noexcept { return postings_.empty(); }
+  [[nodiscard]] std::span<const Posting> postings() const noexcept { return postings_; }
+  // Positions of the i-th posting, ascending. Precondition: i < size().
+  [[nodiscard]] std::span<const std::uint32_t> positions(std::size_t i) const noexcept;
+  [[nodiscard]] std::size_t position_count() const noexcept { return positions_.size(); }
+
+  // Appends a posting for `doc` (must be greater than the last doc added).
+  // tf = positions.size(); positions must be ascending and non-empty.
+  void append(DocId doc, std::span<const std::uint32_t> positions);
+  void shrink_to_fit();
+
+ private:
+  std::vector<Posting> postings_;
+  std::vector<std::uint32_t> positions_;
+  std::vector<std::uint32_t> offsets_{0};
+};
+
 // term -> postings list. Invariant: every postings list is sorted by strictly
 // increasing DocId. The builder guarantees this by adding documents in id
 // order. Phrase matching, DAAT evaluation and delta compression (M2) all rely
@@ -52,6 +85,8 @@ class InvertedIndex {
  public:
   // Empty span if the term isn't in the index.
   [[nodiscard]] std::span<const Posting> postings(std::string_view term) const;
+  // Full list with positions. An empty list if the term isn't in the index.
+  [[nodiscard]] const PostingList& posting_list(std::string_view term) const;
   // Document frequency: how many documents contain the term.
   [[nodiscard]] std::uint32_t doc_freq(std::string_view term) const;
   // Precondition: doc < stats().doc_count.
@@ -59,6 +94,7 @@ class InvertedIndex {
   [[nodiscard]] const CollectionStats& stats() const noexcept { return stats_; }
   [[nodiscard]] std::size_t term_count() const noexcept { return postings_.size(); }
   [[nodiscard]] std::size_t posting_count() const noexcept { return posting_count_; }
+  [[nodiscard]] std::size_t position_count() const noexcept { return position_count_; }
   // The analysis the index was built with. Queries must use the same.
   [[nodiscard]] const text::AnalyzerOptions& analyzer_options() const noexcept {
     return analyzer_options_;
@@ -67,10 +103,11 @@ class InvertedIndex {
  private:
   friend class IndexBuilder;
 
-  std::unordered_map<std::string, std::vector<Posting>, StringHash, std::equal_to<>> postings_;
+  std::unordered_map<std::string, PostingList, StringHash, std::equal_to<>> postings_;
   std::vector<std::uint32_t> doc_lengths_;
   CollectionStats stats_;
   std::size_t posting_count_ = 0;
+  std::size_t position_count_ = 0;
   text::AnalyzerOptions analyzer_options_;
 };
 
@@ -93,8 +130,13 @@ class IndexBuilder {
  private:
   text::Analyzer analyzer_;
   InvertedIndex index_;
-  // Scratch buffer reused across add() calls to avoid reallocating per doc.
-  std::unordered_map<std::string_view, std::uint32_t> doc_tf_;
+  // Scratch buffers reused across add() calls to avoid reallocating per doc.
+  struct TermPosition {
+    std::string_view term;
+    std::uint32_t position;
+  };
+  std::vector<TermPosition> scratch_;
+  std::vector<std::uint32_t> run_;
 };
 
 // The text indexed for a corpus document: title, then body.
