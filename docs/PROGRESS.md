@@ -4,11 +4,11 @@
 then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
-- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). M1 done (19/19).
-- **Last commit:** `feat(query): match phrases by positional intersection`.
+- **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 1 (M2-1..5) done; waiting for Sid before batch 2. M1 done (19/19).
+- **Last commit:** `feat(index): add LEB128 varint codec`.
 
 ## Next step
-- M2-5: LEB128 varint codec.
+- Sid reviews M2 batch 1 (commits 1-5); next batch starts at M2-6 (delta-encoded compressed postings).
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
