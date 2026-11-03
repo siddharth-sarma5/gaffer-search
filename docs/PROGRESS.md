@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `chore(data): vendor pinned openfootball 2025-26 Premier League file with provenance`.
+- **Last commit:** `feat(corpusgen): parse match blocks (date, venue, attendance, score, scorers, cards, referees)`.
 
 ## Next step
-- M1-6: corpusgen match-block parser.
+- M1-7: derive match tags and write match documents.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
