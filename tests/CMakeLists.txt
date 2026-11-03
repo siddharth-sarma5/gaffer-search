@@ -41,3 +41,22 @@ add_test(NAME cli.usage_error COMMAND gaffer search -k 0 x)
 set_tests_properties(cli.usage_error PROPERTIES LABELS cli WILL_FAIL TRUE)
 add_test(NAME cli.missing_corpus COMMAND gaffer search --corpus does-not-exist.tsv x)
 set_tests_properties(cli.missing_corpus PROPERTIES LABELS cli WILL_FAIL TRUE)
+
+# Save an index, then search with it (FIXTURES orders the two tests).
+set(GAFFER_TEST_INDEX ${CMAKE_CURRENT_BINARY_DIR}/pl-2025-26.gaffer)
+add_test(NAME cli.index_save
+  COMMAND gaffer index --out ${GAFFER_TEST_INDEX}
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(cli.index_save PROPERTIES LABELS cli FIXTURES_SETUP saved_index
+  PASS_REGULAR_EXPRESSION "Saved to .*file size: +[0-9]+ bytes")
+add_test(NAME cli.search_saved_index
+  COMMAND gaffer search --index ${GAFFER_TEST_INDEX} "\"north london derby\""
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(cli.search_saved_index PROPERTIES LABELS cli FIXTURES_REQUIRED saved_index
+  PASS_REGULAR_EXPRESSION "Full-time: 2 of 2 matching documents")
+# The saved index must be refused with a different corpus.
+add_test(NAME cli.index_corpus_mismatch
+  COMMAND gaffer search --corpus tests/fixtures/mini_corpus.tsv --index ${GAFFER_TEST_INDEX} x
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+set_tests_properties(cli.index_corpus_mismatch PROPERTIES LABELS cli FIXTURES_REQUIRED saved_index
+  WILL_FAIL TRUE)

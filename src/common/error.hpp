@@ -25,6 +25,13 @@ class IoError : public Error {
   using Error::Error;
 };
 
+// A binary file (e.g. an index file) is malformed, corrupt or from an
+// unsupported format version.
+class FormatError : public Error {
+ public:
+  using Error::Error;
+};
+
 // Input was readable but malformed. Carries where it went wrong so the
 // message points straight at the bad line.
 class ParseError : public Error {

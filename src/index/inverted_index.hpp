@@ -15,6 +15,8 @@
 
 namespace gaffer::index {
 
+class IndexFileAccess;  // index_file.cpp: rebuilds an InvertedIndex from a file
+
 // One entry in a postings list: "term t occurs tf times in document doc".
 struct Posting {
   DocId doc;
@@ -104,6 +106,7 @@ class InvertedIndex {
 
  private:
   friend class IndexBuilder;
+  friend class IndexFileAccess;
 
   std::unordered_map<std::string, PostingList, StringHash, std::equal_to<>> postings_;
   std::vector<std::uint32_t> doc_lengths_;

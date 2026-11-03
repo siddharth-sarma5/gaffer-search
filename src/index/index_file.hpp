@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -61,5 +62,22 @@ struct IndexFileStats {
 // Throws gaffer::IoError on failure.
 IndexFileStats write_index_file(const InvertedIndex& index, std::uint64_t corpus_fingerprint,
                                 const std::filesystem::path& path);
+
+struct LoadedIndex {
+  InvertedIndex index;
+  std::uint64_t corpus_fingerprint = 0;
+};
+
+// Parses and fully validates a v1 index file held in memory. Throws
+// gaffer::FormatError with a reason on any problem: too small, wrong magic,
+// unsupported version, unknown flags, checksum mismatch, or (even when the
+// checksum is valid) a structurally invalid body: unsorted or duplicate terms,
+// undecodable postings, doc lengths not summing to the stored total, or
+// trailing bytes. Never reads out of bounds.
+[[nodiscard]] LoadedIndex deserialize_index(std::span<const std::uint8_t> bytes);
+
+// Reads and deserialises an index file. Throws gaffer::IoError if it can't be
+// read, gaffer::FormatError if it's invalid.
+[[nodiscard]] LoadedIndex load_index_file(const std::filesystem::path& path);
 
 }  // namespace gaffer::index

@@ -54,6 +54,10 @@ class VarintReader {
 
   [[nodiscard]] bool at_end() const noexcept { return pos_ == data_.size(); }
   [[nodiscard]] std::size_t position() const noexcept { return pos_; }
+  [[nodiscard]] std::span<const std::uint8_t> data() const noexcept { return data_; }
+  // Skips n raw bytes (e.g. a length-prefixed blob). Precondition: n <= remaining().
+  void skip(std::size_t n) noexcept { pos_ += n; }
+  [[nodiscard]] std::size_t remaining() const noexcept { return data_.size() - pos_; }
 
  private:
   std::optional<std::uint64_t> read(std::size_t max_bytes, unsigned value_bits) noexcept;

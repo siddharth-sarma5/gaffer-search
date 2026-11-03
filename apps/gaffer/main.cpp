@@ -3,6 +3,7 @@
 //   gaffer index  [options]            build the index, print collection stats
 //                 [--out PATH]         ...and save it as a compressed index file
 //   gaffer search [options] "<query>"  one query, ranked results
+//                 [--index PATH]       ...using a saved index instead of rebuilding
 //   gaffer search [options]            interactive: one query per line on stdin
 //
 // Options:
@@ -46,6 +47,7 @@ struct Options {
   std::string command;
   std::string corpus_path;
   std::optional<std::string> index_out;  // gaffer index --out PATH
+  std::optional<std::string> index_in;   // gaffer search --index PATH
   std::optional<std::string> query;
   std::size_t k = 10;
   gaffer::ranking::Bm25Params bm25;
@@ -59,7 +61,7 @@ class UsageError : public gaffer::Error {
 
 constexpr std::string_view kUsage =
     "usage: gaffer index  [--corpus PATH] [--out INDEX] [--no-stem] [--keep-stopwords]\n"
-    "       gaffer search [--corpus PATH] [-k N] [--k1 X] [--b X] [--no-stem]\n"
+    "       gaffer search [--corpus PATH] [--index INDEX] [-k N] [--k1 X] [--b X] [--no-stem]\n"
     "                     [--keep-stopwords] [\"query\"]\n";
 
 double parse_double(std::string_view flag, const std::string& value) {
@@ -109,6 +111,8 @@ Options parse_args(const std::vector<std::string>& args) {
       opt.corpus_path = value();
     } else if (a == "--out" && opt.command == "index") {
       opt.index_out = value();
+    } else if (a == "--index" && opt.command == "search") {
+      opt.index_in = value();
     } else if (a == "-k") {
       opt.k = parse_count(a, value());
     } else if (a == "--k1") {
@@ -179,8 +183,19 @@ int run(const Options& opt) {
   const auto corpus = gaffer::corpus::load_tsv_file(opt.corpus_path);
   const double load_ms = ms_since(start);
 
+  // Either load a saved index (gaffer search --index) or build one from the corpus.
   start = Clock::now();
-  const auto index = gaffer::index::build_index(corpus, gaffer::text::Analyzer{opt.analyzer});
+  gaffer::index::InvertedIndex index;
+  if (opt.index_in) {
+    auto loaded = gaffer::index::load_index_file(*opt.index_in);
+    if (loaded.corpus_fingerprint != gaffer::corpus::fingerprint(corpus)) {
+      throw gaffer::Error(std::format("index '{}' was built from a different corpus than '{}'",
+                                      *opt.index_in, opt.corpus_path));
+    }
+    index = std::move(loaded.index);
+  } else {
+    index = gaffer::index::build_index(corpus, gaffer::text::Analyzer{opt.analyzer});
+  }
   const double index_ms = ms_since(start);
 
   if (opt.command == "index") {
@@ -223,8 +238,8 @@ int run(const Options& opt) {
     answer(*opt.query);
     return 0;
   }
-  std::cerr << std::format("{} documents indexed in {:.1f} ms. Ask the Gaffer (Ctrl-D to quit).\n",
-                           corpus.size(), index_ms);
+  std::cerr << std::format("{} documents {} in {:.1f} ms. Ask the Gaffer (Ctrl-D to quit).\n",
+                           corpus.size(), opt.index_in ? "loaded" : "indexed", index_ms);
   std::string line;
   while (std::cerr << "\ngaffer> " && std::getline(std::cin, line)) {
     if (!line.empty()) {
