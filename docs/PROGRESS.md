@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `style: add clang-format and clang-tidy configuration`.
+- **Last commit:** `ci: build and test with GCC and Clang under ASan/UBSan; check format and tidy`.
 
 ## Next step
-- M1-4: GitHub Actions CI.
+- M1-5: vendor pinned openfootball 2025-26 data.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
