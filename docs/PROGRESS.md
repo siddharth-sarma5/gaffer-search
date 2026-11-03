@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `test(server): add multi-shard integration and fault-injection tests; run TSan in CI`.
+- **Last commit:** `test: assert sharded results equal single-node results`.
 
 ## Next step
-- M3-10: assert sharded results equal single-node results (N=1,2,4).
+- M3-11: Dockerfile and docker-compose (broker + 4 shards).
 
 ## Open questions
 - None right now.
