@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(text): add stopword filter, S-stemmer and Analyzer pipeline`.
+- **Last commit:** `feat(index): add in-memory inverted index with collection statistics`.
 
 ## Next step
-- M1-14: in-memory inverted index.
+- M1-15: BM25 scorer.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

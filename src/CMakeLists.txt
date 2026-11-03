@@ -4,6 +4,7 @@ add_library(gaffer_core STATIC
   common/error.cpp
   corpus/corpus.cpp
   corpus/document.cpp
+  index/inverted_index.cpp
   text/analyzer.cpp
   text/ascii_fold.cpp
   text/stemmer.cpp
