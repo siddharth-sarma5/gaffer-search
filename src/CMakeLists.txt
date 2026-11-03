@@ -4,6 +4,8 @@ add_library(gaffer_core STATIC
   common/error.cpp
   corpus/corpus.cpp
   corpus/document.cpp
+  text/ascii_fold.cpp
+  text/tokenizer.cpp
 )
 
 # Headers are included relative to src/, e.g. #include "text/tokenizer.hpp".

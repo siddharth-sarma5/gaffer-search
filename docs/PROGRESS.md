@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 1, in progress.
-- **Last commit:** `feat(corpus): add Document type and TSV corpus loader with error reporting`.
+- **Last commit:** `feat(text): add UTF-8 aware tokenizer with ASCII folding`.
 
 ## Next step
-- M1-12: UTF-8 aware tokenizer with ASCII folding.
+- M1-13: stopwords, S-stemmer and Analyzer pipeline.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025
