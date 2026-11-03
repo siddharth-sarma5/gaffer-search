@@ -4,7 +4,10 @@ add_library(gaffer_core STATIC
   common/error.cpp
   corpus/corpus.cpp
   corpus/document.cpp
+  text/analyzer.cpp
   text/ascii_fold.cpp
+  text/stemmer.cpp
+  text/stopwords.cpp
   text/tokenizer.cpp
 )
 

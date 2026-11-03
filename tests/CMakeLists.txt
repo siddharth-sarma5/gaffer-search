@@ -10,4 +10,4 @@ endfunction()
 
 gaffer_add_test(common_test common/error_test.cpp)
 gaffer_add_test(corpus_test corpus/corpus_test.cpp)
-gaffer_add_test(text_test text/tokenizer_test.cpp)
+gaffer_add_test(text_test text/tokenizer_test.cpp text/analyzer_test.cpp)
