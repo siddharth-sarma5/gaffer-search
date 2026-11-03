@@ -172,7 +172,7 @@ frameworks (stretch: epoll), dynamic re-sharding.
 **Commits.**
 - [x] 1. `feat(net): add RAII socket wrappers and deadline-aware read_exact/write_all`
 - [x] 2. `feat(net): add length-prefixed framing and versioned message codec`
-- [ ] 3. `test(net): cover codec round-trips and malformed or oversized frames`
+- [x] 3. `test(net): cover codec round-trips and malformed or oversized frames`
 - [ ] 4. `feat(index): partition corpus into N shards and build per-shard indexes`
 - [ ] 5. `feat(server): add shard server with bounded thread pool and graceful shutdown`
 - [ ] 6. `feat(server): aggregate global statistics at the broker and score shards with them`

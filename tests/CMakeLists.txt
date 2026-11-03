@@ -82,6 +82,6 @@ add_test(NAME bench.smoke
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_tests_properties(bench.smoke PROPERTIES LABELS bench PASS_REGULAR_EXPRESSION "latency: +p50")
 gaffer_add_test(eval_test eval/metrics_test.cpp)
-gaffer_add_test(net_test net/socket_test.cpp)
+gaffer_add_test(net_test net/socket_test.cpp net/messages_test.cpp)
 add_test(NAME eval.smoke COMMAND gaffer-eval WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 set_tests_properties(eval.smoke PROPERTIES LABELS eval PASS_REGULAR_EXPRESSION "default .* MRR|MRR")

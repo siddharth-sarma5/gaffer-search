@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `feat(net): add length-prefixed framing and versioned message codec`.
+- **Last commit:** `test(net): cover codec round-trips and malformed or oversized frames`.
 
 ## Next step
-- M3-3: codec round-trip and malformed/oversized frame tests.
+- M3-4: partition corpus into N shards and build per-shard indexes.
 
 ## Open questions
 - None right now.
