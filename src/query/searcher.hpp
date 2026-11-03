@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "index/inverted_index.hpp"
+#include "query/query_parser.hpp"
 #include "query/top_k.hpp"
 #include "ranking/bm25.hpp"
 #include "text/analyzer.hpp"
@@ -22,6 +23,7 @@ struct QueryTerm {
 };
 
 struct SearchResult {
+  std::vector<Clause> clauses;   // the parsed query
   std::vector<QueryTerm> terms;  // in order of first appearance in the query
   std::vector<ScoredDoc> hits;   // best first, at most k
   std::size_t matched = 0;       // documents containing at least one query term
@@ -53,8 +55,12 @@ class Searcher {
 
   // The analysed, de-duplicated terms of a query, with df and idf filled in.
   [[nodiscard]] std::vector<QueryTerm> query_terms(std::string_view query) const;
+  [[nodiscard]] std::vector<QueryTerm> query_terms(const std::vector<Clause>& clauses) const;
 
  private:
+  // Analyses `text` and merges its terms into `terms` (de-duplicating).
+  void add_terms(std::string_view text, std::vector<QueryTerm>& terms) const;
+
   const index::InvertedIndex* index_;
   text::Analyzer analyzer_;
   ranking::Bm25 bm25_;

@@ -10,6 +10,7 @@
 #include "common/types.hpp"
 #include "index/inverted_index.hpp"
 #include "index/posting_cursor.hpp"
+#include "query/query_parser.hpp"
 #include "query/top_k.hpp"
 #include "ranking/bm25.hpp"
 #include "text/analyzer.hpp"
@@ -23,8 +24,19 @@ Searcher::Searcher(const index::InvertedIndex& index, ranking::Bm25Params params
       bm25_(params, index.stats().doc_count, index.stats().avg_doc_length()) {}
 
 std::vector<QueryTerm> Searcher::query_terms(std::string_view query) const {
+  return query_terms(parse_query(query));
+}
+
+std::vector<QueryTerm> Searcher::query_terms(const std::vector<Clause>& clauses) const {
   std::vector<QueryTerm> terms;
-  for (const auto& tok : analyzer_.analyze(query)) {
+  for (const Clause& clause : clauses) {
+    add_terms(clause.text, terms);
+  }
+  return terms;
+}
+
+void Searcher::add_terms(std::string_view text, std::vector<QueryTerm>& terms) const {
+  for (const auto& tok : analyzer_.analyze(text)) {
     // Queries are a handful of terms, so a linear scan beats a hash set.
     const auto it = std::ranges::find(terms, tok.term, &QueryTerm::term);
     if (it != terms.end()) {
@@ -34,12 +46,13 @@ std::vector<QueryTerm> Searcher::query_terms(std::string_view query) const {
     const std::uint32_t df = index_->doc_freq(tok.term);
     terms.push_back(QueryTerm{tok.term, 1, df, bm25_.idf(df)});
   }
-  return terms;
 }
 
 SearchResult Searcher::search(std::string_view query, std::size_t k) const {
   SearchResult result;
-  result.terms = query_terms(query);
+  result.clauses = parse_query(query);
+  // M2-3: phrase words are still scored as plain terms; positions come next.
+  result.terms = query_terms(result.clauses);
 
   // One cursor per distinct query term, in query order.
   std::vector<index::PostingCursor> cursors;

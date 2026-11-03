@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). M1 done (19/19).
-- **Last commit:** `refactor(query): switch to document-at-a-time evaluation with postings cursors`.
+- **Last commit:** `feat(query): add query parser supporting quoted phrases`.
 
 ## Next step
-- M2-3: query parser supporting quoted phrases.
+- M2-4: match phrases by positional intersection.
 
 ## Open questions
 - **Q1 (corpus scale, needed for M2):** No answer yet, so the default stands: add 1992–2025

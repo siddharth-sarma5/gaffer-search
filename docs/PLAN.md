@@ -120,7 +120,7 @@ results-only historical corpus for scale; `gaffer-bench`; a precision@k/MRR eval
 **Commits.**
 - [x] 1. `feat(index): store term positions in postings`
 - [x] 2. `refactor(query): switch to document-at-a-time evaluation with postings cursors`
-- [ ] 3. `feat(query): add query parser supporting quoted phrases`
+- [x] 3. `feat(query): add query parser supporting quoted phrases`
 - [ ] 4. `feat(query): match phrases by positional intersection`
 - [ ] 5. `feat(index): add LEB128 varint codec`
 - [ ] 6. `feat(index): delta-encode doc ids and positions in compressed postings`
