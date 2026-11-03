@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `feat(index): partition corpus into N shards and build per-shard indexes`.
+- **Last commit:** `feat(server): add shard server with bounded thread pool and graceful shutdown`.
 
 ## Next step
-- M3-5: shard server with bounded thread pool and graceful shutdown.
+- M3-6: global statistics aggregated by the broker, used by shards.
 
 ## Open questions
 - None right now.

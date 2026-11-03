@@ -14,6 +14,7 @@ add_library(gaffer_core STATIC
   index/varint.cpp
   net/framing.cpp
   net/messages.cpp
+  net/rpc.cpp
   net/socket.cpp
   query/nicknames.cpp
   query/phrase.cpp
@@ -21,6 +22,7 @@ add_library(gaffer_core STATIC
   query/searcher.cpp
   query/top_k.cpp
   ranking/bm25.cpp
+  server/shard_server.cpp
   snippet/snippet.cpp
   text/analyzer.cpp
   text/ascii_fold.cpp

@@ -220,6 +220,10 @@ Fd accept_until(const Fd& listener, Deadline deadline) {
   }
 }
 
+IoStatus wait_readable(const Fd& fd, Deadline deadline) {
+  return wait_for(fd.get(), POLLIN, deadline);
+}
+
 IoStatus read_exact(const Fd& fd, std::span<std::uint8_t> buf, Deadline deadline) {
   std::size_t done = 0;
   while (done < buf.size()) {

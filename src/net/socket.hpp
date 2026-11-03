@@ -75,6 +75,12 @@ class Fd {
 // Waits for a connection until `deadline`. Returns an invalid Fd on timeout.
 [[nodiscard]] Fd accept_until(const Fd& listener, Deadline deadline);
 
+// Waits until fd has data to read (or EOF) without consuming anything.
+// Lets an idle server poll in short slices for shutdown while never
+// cutting a frame in half: once data is ready, the frame is read under the
+// full request deadline.
+[[nodiscard]] IoStatus wait_readable(const Fd& fd, Deadline deadline);
+
 // Reads exactly buf.size() bytes, looping over partial reads (TCP is a byte
 // stream: one write on the sender can arrive as many reads here, and vice
 // versa). Retries on EINTR; waits with poll() between attempts.
