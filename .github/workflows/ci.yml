@@ -54,6 +54,11 @@ jobs:
           python -m corpusgen.history \
             --input-dir ../../data/raw/openfootball/history --output /tmp/pl-history.tsv
           cmp /tmp/pl-history.tsv ../../data/corpus/pl-history.tsv
+      - name: Committed relevance judgements are up to date
+        run: |
+          cp eval/queries.tsv /tmp/queries.tsv && cp eval/qrels.tsv /tmp/qrels.tsv
+          PYTHONPATH=tools/corpusgen python eval/make_qrels.py
+          cmp /tmp/queries.tsv eval/queries.tsv && cmp /tmp/qrels.tsv eval/qrels.tsv
       - name: Vendored history files match their checksums
         working-directory: data/raw/openfootball/history
         run: sha256sum --check --quiet SHA256SUMS

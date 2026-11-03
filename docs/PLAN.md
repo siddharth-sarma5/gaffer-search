@@ -131,7 +131,7 @@ results-only historical corpus for scale; `gaffer-bench`; a precision@k/MRR eval
 - [x] 11. `feat(ranking): add VAR review per-term score explanations`
 - [x] 12. `feat(corpusgen): add results-only historical seasons for the scale corpus`
 - [x] 13. `perf(bench): add gaffer-bench for indexing throughput, latency percentiles and index size`
-- [ ] 14. `feat(eval): add precision@k and MRR evaluator with 20 labelled queries`
+- [x] 14. `feat(eval): add precision@k and MRR evaluator with 20 labelled queries`
 - [ ] 15. `docs: publish measured benchmark and relevance results`
 
 **After M2 you should be able to explain:**

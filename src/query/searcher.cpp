@@ -130,7 +130,7 @@ void Searcher::analyze_clauses(SearchResult& result) const {
         }
         const std::uint32_t df = index_->doc_freq(tok.term);
         result.terms.push_back(
-            QueryTerm{tok.term, 1, df, bm25_.idf(df), kExpansionWeight, e.alias});
+            QueryTerm{tok.term, 1, df, bm25_.idf(df), expander_->weight(), e.alias});
       }
     }
   }

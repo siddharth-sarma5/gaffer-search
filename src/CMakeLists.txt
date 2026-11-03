@@ -5,6 +5,7 @@ add_library(gaffer_core STATIC
   common/error.cpp
   corpus/corpus.cpp
   corpus/document.cpp
+  eval/metrics.cpp
   index/index_file.cpp
   index/inverted_index.cpp
   index/posting_cursor.cpp

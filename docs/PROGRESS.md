@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 2 in progress, in batches of 5 commits (Sid, 2026-11-03). Batch 3 (M2-11..15) in progress (Sid: do the rest of the milestone). M1 done (19/19).
-- **Last commit:** `perf(bench): add gaffer-bench for indexing throughput, latency percentiles and index size`.
+- **Last commit:** `feat(eval): add precision@k and MRR evaluator with 20 labelled queries`.
 
 ## Next step
-- M2-14: precision@k and MRR evaluator with 20 labelled queries.
+- M2-15: publish benchmark and relevance results in the README.
 
 ## Open questions
 - None right now.

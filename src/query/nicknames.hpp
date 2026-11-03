@@ -45,12 +45,18 @@ class NicknameExpander {
 
   [[nodiscard]] std::size_t size() const noexcept { return entries_.size(); }
 
+  // Weight given to expansion terms (default kExpansionWeight). Adjustable so
+  // the relevance evaluation can compare settings.
+  [[nodiscard]] double weight() const noexcept { return weight_; }
+  void set_weight(double w) noexcept { weight_ = w; }
+
  private:
   struct Entry {
     std::vector<std::string> tokens;  // tokenized alias
     Expansion expansion;
   };
   std::vector<Entry> entries_;  // sorted by token count, longest first
+  double weight_ = kExpansionWeight;
 };
 
 }  // namespace gaffer::query

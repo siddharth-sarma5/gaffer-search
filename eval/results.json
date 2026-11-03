@@ -1,0 +1,33 @@
+{
+  "queries": 20,
+  "configs": [
+    {"name": "default (b=0.75, nicknames x0.7)", "p5": 0.5200, "p10": 0.3800, "r10": 0.8952, "mrr": 0.7182},
+    {"name": "no nickname expansion", "p5": 0.4000, "p10": 0.2900, "r10": 0.6702, "mrr": 0.6280},
+    {"name": "nicknames x0.5", "p5": 0.5200, "p10": 0.3800, "r10": 0.8952, "mrr": 0.7208},
+    {"name": "nicknames x1.0", "p5": 0.5200, "p10": 0.3750, "r10": 0.8785, "mrr": 0.7138},
+    {"name": "b=0.5 (less length norm.)", "p5": 0.5600, "p10": 0.3900, "r10": 0.9190, "mrr": 0.7537},
+    {"name": "b=0.9 (more length norm.)", "p5": 0.5100, "p10": 0.3700, "r10": 0.8619, "mrr": 0.7096}
+  ],
+  "per_query_default": [
+    {"qid": "q01", "query": "late winner at anfield", "p5": 0.8000, "p10": 0.4000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q02", "query": "palmer hat-trick", "p5": 0.4000, "p10": 0.2000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q03", "query": "haaland brace", "p5": 1.0000, "p10": 0.8000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q04", "query": "north london derby", "p5": 0.4000, "p10": 0.2000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q05", "query": "gunners comeback", "p5": 0.4000, "p10": 0.2000, "r10": 1.0000, "rr": 0.5000},
+    {"qid": "q06", "query": "goalless draw at stamford bridge", "p5": 0.2000, "p10": 0.1000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q07", "query": "merseyside derby", "p5": 0.4000, "p10": 0.2000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q08", "query": "relegated", "p5": 0.8000, "p10": 0.4000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q09", "query": "champions", "p5": 0.4000, "p10": 0.2000, "r10": 1.0000, "rr": 1.0000},
+    {"qid": "q10", "query": "spurs high-scoring", "p5": 0.6000, "p10": 0.3000, "r10": 1.0000, "rr": 0.5000},
+    {"qid": "q11", "query": "toffees home win", "p5": 0.6000, "p10": 0.6000, "r10": 1.0000, "rr": 0.5000},
+    {"qid": "q12", "query": "man utd late equaliser", "p5": 0.8000, "p10": 0.6000, "r10": 1.0000, "rr": 0.5000},
+    {"qid": "q13", "query": "salah penalty", "p5": 0.2000, "p10": 0.1000, "r10": 1.0000, "rr": 0.5000},
+    {"qid": "q14", "query": "comeback from two goals down", "p5": 0.0000, "p10": 0.0000, "r10": 0.0000, "rr": 0.0400},
+    {"qid": "q15", "query": "hat-trick", "p5": 0.0000, "p10": 0.3000, "r10": 0.4286, "rr": 0.1250},
+    {"qid": "q16", "query": "clean sheet at the stadium of light", "p5": 0.8000, "p10": 0.9000, "r10": 0.9000, "rr": 1.0000},
+    {"qid": "q17", "query": "watkins brace", "p5": 0.8000, "p10": 0.5000, "r10": 1.0000, "rr": 0.5000},
+    {"qid": "q18", "query": "wolves red card", "p5": 0.2000, "p10": 0.2000, "r10": 0.6667, "rr": 0.2000},
+    {"qid": "q19", "query": "gyokeres goal", "p5": 1.0000, "p10": 1.0000, "r10": 0.9091, "rr": 1.0000},
+    {"qid": "q20", "query": "own goal late winner", "p5": 0.6000, "p10": 0.4000, "r10": 1.0000, "rr": 1.0000}
+  ]
+}
