@@ -1,0 +1,58 @@
+# A 4-shard Ask the Gaffer cluster over the 1992-2026 corpus (13,724 docs).
+#
+#   docker compose -f deploy/docker-compose.yml up --build -d
+#   docker compose -f deploy/docker-compose.yml run --rm client \
+#       gaffer search --broker broker:7000 "late winner at anfield"
+#   docker compose -f deploy/docker-compose.yml stop shard2   # then query again: partial results
+#   docker compose -f deploy/docker-compose.yml down
+#
+# The broker is also published on localhost:7000 for a host-side
+# `gaffer search --broker 127.0.0.1:7000 ...`.
+
+x-shard: &shard
+  image: gaffer-search:latest
+  restart: unless-stopped
+  stop_signal: SIGTERM
+
+services:
+  shard0:
+    <<: *shard
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: [gaffer-shard, --corpus, /shards/shard-0.tsv, --index, /shards/shard-0.gaffer,
+              --shard-id, "0", --num-shards, "4", --host, 0.0.0.0, --port, "7001"]
+  shard1:
+    <<: *shard
+    command: [gaffer-shard, --corpus, /shards/shard-1.tsv, --index, /shards/shard-1.gaffer,
+              --shard-id, "1", --num-shards, "4", --host, 0.0.0.0, --port, "7001"]
+    depends_on: [shard0]   # shard0 builds the image; the rest reuse it
+  shard2:
+    <<: *shard
+    command: [gaffer-shard, --corpus, /shards/shard-2.tsv, --index, /shards/shard-2.gaffer,
+              --shard-id, "2", --num-shards, "4", --host, 0.0.0.0, --port, "7001"]
+    depends_on: [shard0]
+  shard3:
+    <<: *shard
+    command: [gaffer-shard, --corpus, /shards/shard-3.tsv, --index, /shards/shard-3.gaffer,
+              --shard-id, "3", --num-shards, "4", --host, 0.0.0.0, --port, "7001"]
+    depends_on: [shard0]
+
+  broker:
+    image: gaffer-search:latest
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    # Startup retries until every shard answers its stats request, so no
+    # health-check ordering is needed beyond depends_on.
+    command: [gaffer-broker, --shard, "shard0:7001", --shard, "shard1:7001",
+              --shard, "shard2:7001", --shard, "shard3:7001",
+              --host, 0.0.0.0, --port, "7000", --deadline-ms, "200"]
+    ports: ["7000:7000"]
+    depends_on: [shard0, shard1, shard2, shard3]
+
+  client:
+    image: gaffer-search:latest
+    profiles: [tools]   # not started by `up`; used with `run`
+    depends_on: [broker]
+    entrypoint: []
+    command: [gaffer, search, --broker, "broker:7000", "late winner at anfield"]

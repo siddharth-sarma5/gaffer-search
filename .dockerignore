@@ -1,0 +1,9 @@
+build/
+.git/
+bench/
+eval/
+tests/
+tools/
+docs/
+data/raw/
+*.gaffer

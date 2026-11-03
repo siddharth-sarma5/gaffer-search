@@ -57,6 +57,37 @@ jobs:
       - name: Test (whole suite, incl. server fault-injection tests)
         run: ctest --preset tsan
 
+  docker:
+    name: docker compose cluster
+    runs-on: ubuntu-24.04
+    env:
+      COMPOSE: docker compose -f deploy/docker-compose.yml
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image and start broker + 4 shards
+        run: $COMPOSE up --build -d
+      - name: Query through the broker
+        run: |
+          # The broker becomes ready once every shard has answered its stats request.
+          for i in $(seq 1 30); do
+            if $COMPOSE run --rm client > out.txt 2>&1; then break; fi
+            sleep 2
+          done
+          cat out.txt
+          grep -q "from 4 shards" out.txt
+          ! grep -q "PARTIAL" out.txt
+      - name: Stop a shard and expect flagged partial results
+        run: |
+          $COMPOSE stop shard2
+          $COMPOSE run --rm client | tee out2.txt
+          grep -q "PARTIAL RESULTS: 3 of 4 shards answered" out2.txt
+      - name: Logs
+        if: failure()
+        run: $COMPOSE logs
+      - name: Tear down
+        if: always()
+        run: $COMPOSE down
+
   corpusgen:
     name: corpusgen (Python)
     runs-on: ubuntu-24.04

@@ -180,7 +180,7 @@ frameworks (stretch: epoll), dynamic re-sharding.
 - [x] 8. `feat(server): return flagged partial results on shard timeout or failure`
 - [x] 9. `test(server): add multi-shard integration and fault-injection tests; run TSan in CI`
 - [x] 10. `test: assert sharded results equal single-node results`
-- [ ] 11. `build: add Dockerfile and docker-compose for broker plus shards`
+- [x] 11. `build: add Dockerfile and docker-compose for broker plus shards`
 - [ ] 12. `perf(bench): measure query latency against shard count`
 - [ ] 13. `docs: update architecture and write up the global-IDF trade-off`
 
