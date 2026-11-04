@@ -5,10 +5,10 @@ then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
 - **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `build: add Dockerfile and docker-compose for broker plus shards`.
+- **Last commit:** `perf(bench): measure query latency against shard count`.
 
 ## Next step
-- M3-12: benchmark latency vs shard count.
+- M3-13: architecture update and global-IDF trade-off write-up.
 
 ## Open questions
 - None right now.
