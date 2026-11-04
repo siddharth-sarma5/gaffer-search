@@ -79,7 +79,9 @@ jobs:
       - name: Stop a shard and expect flagged partial results
         run: |
           $COMPOSE stop shard2
-          $COMPOSE run --rm client | tee out2.txt
+          # --no-deps: otherwise `run` starts the client's dependencies, and
+          # broker depends on every shard, so shard2 would be restarted.
+          $COMPOSE run --rm --no-deps client | tee out2.txt
           grep -q "PARTIAL RESULTS: 3 of 4 shards answered" out2.txt
       - name: Logs
         if: failure()

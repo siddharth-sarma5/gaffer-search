@@ -3,7 +3,9 @@
 #   docker compose -f deploy/docker-compose.yml up --build -d
 #   docker compose -f deploy/docker-compose.yml run --rm client \
 #       gaffer search --broker broker:7000 "late winner at anfield"
-#   docker compose -f deploy/docker-compose.yml stop shard2   # then query again: partial results
+#   docker compose -f deploy/docker-compose.yml stop shard2
+#   docker compose -f deploy/docker-compose.yml run --rm --no-deps client   # partial results
+#   (--no-deps matters: without it `run` restarts the client's dependencies, incl. shard2)
 #   docker compose -f deploy/docker-compose.yml down
 #
 # The broker is also published on localhost:7000 for a host-side
