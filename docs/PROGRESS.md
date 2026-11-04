@@ -4,16 +4,22 @@
 then continue from the first unchecked item in PLAN.md.*
 
 ## Where we are
-- **Phase:** Milestone 3 in progress (Sid: finish milestone 3, 2026-11-03). M1 (19/19) and M2 (15/15) done.
-- **Last commit:** `perf(bench): measure query latency against shard count`.
+- **Phase:** Milestones 1, 2 and 3 complete (19 + 15 + 13 commits, plus fixes). Remaining: the final phase (visualiser, codebase walkthrough, what-I-learned).
+- **Last commit:** `docs: update architecture and write up the global-IDF trade-off`.
 
 ## Next step
-- M3-13: architecture update and global-IDF trade-off write-up.
+- Final phase: interactive visualiser, codebase walkthrough with Sid, what-I-learned (Sid will schedule).
 
 ## Open questions
 - None right now.
 
 ## Known issues / notes
+- Cluster: each shard renders snippets for its own top-k, so S shards render S x k snippets for
+  k results (bench/README.md). Query-then-fetch is the documented next optimisation.
+- The docker image can't be built in the dev sandbox (Docker Hub blocked); the CI `docker` job
+  builds and exercises it. Its first run failed because `compose run` restarted the stopped
+  shard; fixed with --no-deps (4eda78a). bench/results/cluster-1992-2026.json was committed in
+  4eda78a by mistake; history left as is rather than force-pushed.
 - Relevance failure analysis (eval/README.md): "two" vs "2" vocabulary mismatch (q14); short
   player pages outranking matches (q15); "Red cards: 0" in every player page polluting "red card"
   (q18). Candidate fixes: omit zero counts in the generator, number-word normalisation, a held-out

@@ -8,13 +8,16 @@ clubs, with highlighted snippets and an optional "VAR review" of each score.
 
 Everything is implemented with the standard library: UTF-8 tokenization, a positional inverted
 index, BM25, document-at-a-time top-k retrieval, phrase queries, delta + varint compression, a
-checksummed on-disk index, snippets and query expansion. GoogleTest is the only dependency.
+checksummed on-disk index, snippets and query expansion. A sharded deployment then puts index
+servers behind a broker over a custom TCP protocol, with global BM25 statistics (sharded scores
+equal single-node scores exactly), deadlines and partial results. GoogleTest is the only
+dependency.
 
 | Milestone | Scope | Status |
 |-----------|-------|--------|
 | **M1** single-node search | corpus generator, tokenizer, inverted index, BM25, top-k heap, CLI | ✅ done |
 | **M2** fast and good | positions & phrases, DAAT, varint/delta compression, on-disk index, snippets, nickname expansion, VAR review, benchmarks, relevance evaluation | ✅ done |
-| **M3** distributed | shard servers over TCP, broker fan-out, global IDF, partial results, docker-compose | planned |
+| **M3** distributed | shard servers over TCP, broker fan-out, global IDF, partial results, docker-compose | ✅ done |
 
 ## Demo
 
@@ -75,13 +78,20 @@ $G search                                   # interactive: one query per line
 ./build/release/apps/gaffer-bench --corpus data/corpus/pl-history.tsv --corpus data/corpus/pl-2025-26.tsv
 ./build/release/apps/gaffer-eval            # precision@k / MRR on 20 labelled queries
 
-# Tests (162 C++ tests: unit, property, end-to-end goldens, CLI) under ASan + UBSan
+# A 4-shard cluster over all 13,724 docs (local processes; Ctrl-C stops it) ...
+deploy/local-cluster.sh 4 7000 &
+$G search --broker 127.0.0.1:7000 "late winner at anfield"
+# ... or with Docker
+docker compose -f deploy/docker-compose.yml up --build -d
+docker compose -f deploy/docker-compose.yml run --rm client gaffer search --broker broker:7000 "gunners"
+
+# Tests (225 C++ tests: unit, property, fuzz-style, cluster fault injection, end-to-end, CLI)
 cmake --preset asan && cmake --build --preset asan && ctest --preset asan
 python3 -m unittest discover -s tools/corpusgen/tests -t tools/corpusgen
 ```
 
-Search options: `-k N`, `--k1 X`, `--b X`, `--no-stem`, `--keep-stopwords`, `--corpus PATH`,
-`--index PATH`, `--nicknames PATH`, `--no-expand`, `--var`.
+Search options: `-k N`, `--k1 X`, `--b X`, `--no-stem`, `--keep-stopwords`, `--corpus PATH`
+(repeatable), `--index PATH`, `--broker HOST:PORT`, `--nicknames PATH`, `--no-expand`, `--var`.
 
 ## How it works
 
@@ -110,7 +120,16 @@ query ──▶ parse "phrases" ──▶ Analyzer ──▶ nickname expansion 
 - **Results** (`src/snippet/`, `src/ranking/`): the best snippet window by distinct query terms,
   highlighted in the original spelling; a per-term score explanation.
 
-Details and Mermaid diagrams: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Every design choice,
+- **Distributed** (`src/net/`, `src/server/`): `gaffer partition` splits the corpus round-robin by
+  doc id. Each `gaffer-shard` serves its slice over a length-prefixed binary protocol (versioned,
+  4 MiB frame cap, every decode bounds-checked). The `gaffer-broker` gathers N, total length and
+  df from all shards at startup, sends each query to every shard in parallel with the global df
+  of the query's terms and one shared deadline, and k-way merges the results. Shards that time
+  out or fail are reported as `partial` instead of failing the query. Servers are reactors:
+  `poll()` plus a worker pool, so pooled idle connections don't pin threads (a thread-per-
+  connection first version starved under a concurrency test).
+
+Details, Mermaid diagrams and the global-IDF trade-off: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Every design choice,
 with the alternatives considered: [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Benchmarks
@@ -130,6 +149,22 @@ On this shared VM, an immediate re-run of the larger benchmark gave p50 26.4 µs
 Tail latency moves by tens of percent between runs, so these are orders of magnitude, not
 precise figures.
 
+### Cluster latency vs shard count
+
+Same VM (**2 vCPUs**), 13,724 docs, end-to-end over localhost TCP through the broker, 38-query
+log × 100. Details in [bench/README.md](bench/README.md).
+
+| | p50 | p99 |
+|---|---:|---:|
+| single node, search + 10 snippets (in-process baseline) | 183 µs | 618 µs |
+| 1 shard via broker | 493 µs | 1,261 µs |
+| 2 shards via broker | **427 µs** | 1,297 µs |
+| 4 shards via broker | 723 µs | 2,171 µs |
+| 8 shards via broker | 1,230 µs | 3,422 µs |
+
+2 shards beat 1 by using both cores; beyond that, threads exceed cores and every shard renders
+snippets for its own top-k (S × k snippets for k results). Query-then-fetch is the known fix.
+
 ## Relevance
 
 From `gaffer-eval`: 20 queries whose relevant documents are defined by explicit criteria on the
@@ -146,13 +181,17 @@ Many queries have fewer than 10 relevant documents, which caps P@10. Failure ana
 ## Engineering
 
 - C++20, CMake presets (`debug`, `asan`, `tsan`, `release`), `-Wall -Wextra -Wconversion … -Werror`
-- CI on every push: GCC 13 and Clang 18 × {ASan+UBSan, Release}, clang-format, clang-tidy,
+- CI on every push: GCC 13 and Clang 18 × {ASan+UBSan, Release}, GCC TSan, docker compose, clang-format, clang-tidy,
   corpus-generator tests, and byte-for-byte checks that the committed corpora and judgements match
   their generators and that vendored data matches its checksums
 - Property tests against brute-force references: top-k vs full sort, DAAT vs exhaustive scoring,
   phrase search vs a naive adjacency scan, galloping search vs a linear scan
-- Fuzz-style tests: every truncation and every byte flip of an index file is rejected cleanly
-  under ASan
+- Fuzz-style tests: every truncation and every byte flip of an index file, every truncation
+  of every wire message, and 20,000 random messages are rejected cleanly under ASan
+- Distributed correctness: sharded == single-node (same docs, order and bit-identical scores)
+  for 1–4 shards over real TCP; fault injection with slow, dead, restarted, black-holed and
+  garbage-speaking shards; a ThreadSanitizer CI job; a docker-compose CI job that stops a shard
+  and checks for flagged partial results
 - Golden-file test of top-5 results for 15 queries
 
 ## Docs
