@@ -129,7 +129,9 @@ query ──▶ parse "phrases" ──▶ Analyzer ──▶ nickname expansion 
   `poll()` plus a worker pool, so pooled idle connections don't pin threads (a thread-per-
   connection first version starved under a concurrency test).
 
-Details, Mermaid diagrams and the global-IDF trade-off: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Every design choice,
+Details, Mermaid diagrams and the global-IDF trade-off: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+A one-page interactive code tour (open in a browser, no build step): [docs/visualiser/index.html](docs/visualiser/index.html). Every design choice,
 with the alternatives considered: [docs/DECISIONS.md](docs/DECISIONS.md).
 
 ## Benchmarks

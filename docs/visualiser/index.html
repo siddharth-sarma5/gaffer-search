@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask the Gaffer Code Tour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Plan: pitch-green accent on a slightly green-tinted paper; amber marks "this step";
+   layout = stepper (left) + step detail (right), code map of every module underneath. */
+:root {
+  --bg: #f4f6f3;
+  --panel: #ffffff;
+  --ink: #15201a;
+  --muted: #5b6a61;
+  --line: #d7ded8;
+  --accent: #1d6b45;
+  --accent-soft: #e2efe7;
+  --hot: #b26a00;
+  --hot-soft: #fff1d9;
+  --code-bg: #eef2ee;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1612; --panel: #16201a; --ink: #e6ede8; --muted: #9aaba1; --line: #2a372f;
+    --accent: #5cc48b; --accent-soft: #1b3326; --hot: #f0b44c; --hot-soft: #3a2c12; --code-bg: #111a15;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1612; --panel: #16201a; --ink: #e6ede8; --muted: #9aaba1; --line: #2a372f;
+  --accent: #5cc48b; --accent-soft: #1b3326; --hot: #f0b44c; --hot-soft: #3a2c12; --code-bg: #111a15;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 48px; display: grid; gap: 24px; }
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 16px; }
+h1 { font: 800 28px/1.15 var(--display); margin: 0; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); margin: 6px 0 0; max-width: 62ch; }
+h2 { font: 600 18px/1.3 var(--display); margin: 0; }
+h3 { font: 600 20px/1.25 var(--display); margin: 0; text-wrap: balance; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 13px; color: var(--muted); }
+.stat b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+.mode { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.mode button { font: 600 14px var(--body); border: 0; background: none; color: var(--muted); padding: 8px 14px; cursor: pointer; }
+.mode button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+button:focus-visible, .step:focus-visible, .file:focus-visible { outline: 2px solid var(--hot); outline-offset: 2px; }
+
+.tour { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+@media (max-width: 820px) { .tour { grid-template-columns: 1fr; } }
+.steps { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px; display: grid; gap: 2px; }
+.phase { font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 10px 10px 4px; }
+.step { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: center; text-align: left; width: 100%;
+  border: 0; background: none; color: var(--ink); padding: 7px 8px; border-radius: 6px; cursor: pointer; font: 500 14px var(--body); }
+.step:hover { background: var(--accent-soft); }
+.step .n { font: 600 12px var(--mono); color: var(--muted); text-align: center; border: 1px solid var(--line); border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; }
+.step[aria-current="step"] { background: var(--hot-soft); }
+.step[aria-current="step"] .n { background: var(--hot); border-color: var(--hot); color: var(--bg); }
+
+.detail { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.detail .kicker { font: 600 12px var(--mono); color: var(--hot); }
+.detail p { margin: 0; max-width: 68ch; }
+.files { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 12px var(--mono); background: var(--accent-soft); color: var(--accent); border-radius: 5px; padding: 3px 7px; }
+.why { border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; color: var(--muted); }
+.why b { color: var(--ink); }
+pre { margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  font: 12.5px/1.5 var(--mono); overflow-x: auto; white-space: pre; }
+pre .hl { color: var(--hot); font-weight: 600; }
+pre .dim { color: var(--muted); }
+.nav { display: flex; gap: 8px; justify-content: space-between; }
+.nav button { font: 600 14px var(--body); border: 1px solid var(--line); background: var(--bg); color: var(--ink); padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+.nav button:disabled { opacity: .4; cursor: default; }
+
+.map-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.map-head p { margin: 0; color: var(--muted); font-size: 14px; }
+.layers { display: grid; gap: 10px; }
+.layer { display: grid; grid-template-columns: 130px 1fr; gap: 10px; align-items: start; }
+@media (max-width: 640px) { .layer { grid-template-columns: 1fr; } }
+.layer-name { font: 600 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding-top: 10px; }
+.mods { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.mod { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; transition: border-color .15s, background .15s; }
+.mod.on { border-color: var(--hot); background: var(--hot-soft); }
+.mod-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.mod-name { font: 600 14px var(--mono); }
+.mod-lines { font: 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.mod-desc { font-size: 13px; color: var(--muted); margin: 0; }
+.file-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.file { font: 11.5px var(--mono); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; background: var(--bg); color: var(--ink); cursor: pointer; }
+.file.on { border-color: var(--hot); color: var(--hot); font-weight: 600; }
+.file-info { min-height: 3.2em; background: var(--panel); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.file-info code { font: 600 13px var(--mono); color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .mod { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ask the Gaffer <span>Code Tour</span></h1>
+      <p class="sub">Follow one query, <b>"red devils comeback"</b>, through the C++20 search engine. Pick a step on the left. The modules it touches light up in the code map below.</p>
+    </div>
+    <div class="mode" role="group" aria-label="Deployment mode">
+      <button id="m-single" aria-pressed="true">Single node</button>
+      <button id="m-cluster" aria-pressed="false">Cluster</button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <section class="tour" aria-label="Walkthrough">
+    <nav class="steps" id="steps" aria-label="Steps"></nav>
+    <article class="detail" id="detail" aria-live="polite"></article>
+  </section>
+
+  <section class="layers" aria-label="Code map">
+    <div class="map-head">
+      <h2>Code map</h2>
+      <p>Every source file with its line count. Click a file to see what it does.</p>
+    </div>
+    <div class="file-info" id="file-info">Click any file name below.</div>
+    <div id="map" class="layers"></div>
+  </section>
+</div>
+
+<script>
+const MODULES = [
+  { layer: "Programs", id: "apps", desc: "The five executables: CLI, shard server, broker, benchmark, relevance eval.", files: [
+    ["gaffer/main.cpp", 459, "The CLI: search, index, partition; interactive mode; --var score breakdown; --broker to query a cluster."],
+    ["gaffer-shard/main.cpp", 121, "Starts one shard server on its slice of the corpus; shuts down cleanly on SIGINT/SIGTERM via sigwait."],
+    ["gaffer-broker/main.cpp", 107, "Starts the broker in front of N shards; same signal handling."],
+    ["gaffer-bench/main.cpp", 472, "Indexing throughput, query latency percentiles, compression ratio, and cluster latency vs shard count."],
+    ["gaffer-eval/main.cpp", 185, "Runs 20 labelled queries and reports precision@k, recall@k and MRR, with and without nickname expansion."]]},
+  { layer: "Distributed", id: "server", desc: "Reactor TCP server, shard server, broker fan-out and merge, global statistics.", files: [
+    ["tcp_server.cpp", 181, "Reactor: one poll() thread watches every socket and hands ready requests to a worker pool. A self-pipe wakes it for shutdown."],
+    ["shard_server.cpp", 111, "Answers StatsRequest (N, total length, df) and ShardSearchRequest (search using the global stats it is sent)."],
+    ["broker.cpp", 212, "Gathers global stats at startup, sends each query to all shards in parallel under one deadline, k-way merges, flags missing shards."],
+    ["global_stats.cpp", 64, "merge_stats sums N, total length and df across shards; df_for looks up a term's global df."]]},
+  { layer: "Distributed", id: "net", desc: "Sockets, length-prefixed framing, the versioned wire protocol, request/response helper.", files: [
+    ["socket.cpp", 278, "RAII file descriptor, Deadline, listen/connect/accept, read_exact and write_all that respect the deadline."],
+    ["framing.cpp", 49, "4-byte length prefix per message with a 4 MiB cap, so a bad peer can't make us allocate gigabytes."],
+    ["messages.cpp", 276, "Protocol v1 as a std::variant: stats, shard search, search, error. Every decode is bounds-checked."],
+    ["rpc.cpp", 49, "exchange/call: send one framed message, wait for the reply before the deadline."]]},
+  { layer: "Query", id: "query", desc: "Parse, expand nicknames, walk postings, phrase match, keep the top k.", files: [
+    ["query_parser.cpp", 61, "Splits a query into quoted phrases (required) and bare terms (optional, ranked)."],
+    ["nicknames.cpp", 107, "Maps nicknames like \"red devils\" to the club's tokens, added at weight 0.7."],
+    ["phrase.cpp", 27, "Checks that a phrase's terms appear at consecutive positions (leapfrog intersection)."],
+    ["searcher.cpp", 325, "The query engine: plan_query, document-at-a-time walk over posting cursors, scoring, global-stats mode."],
+    ["top_k.cpp", 43, "Min-heap of size k; ties broken by doc id so results are deterministic."]]},
+  { layer: "Query", id: "ranking", desc: "BM25 scoring and the per-term explanation behind --var.", files: [
+    ["bm25.cpp", 36, "BM25 with k1 = 1.2, b = 0.75 and Lucene's idf, so idf never goes negative."],
+    ["explanation.hpp", 34, "Per-term tf, idf, weight and contribution for the VAR review."]]},
+  { layer: "Query", id: "snippet", desc: "Picks the best text window and bolds the matched terms.", files: [
+    ["snippet.cpp", 119, "Slides a window over token positions, keeps the one covering the most query terms, bolds them."]]},
+  { layer: "Index", id: "index", desc: "Inverted index, cursors, compression, the on-disk file, sharding math.", files: [
+    ["inverted_index.cpp", 142, "Term to postings list (doc ids, term frequencies, positions) stored as parallel arrays, plus doc lengths."],
+    ["posting_cursor.cpp", 37, "Iterator over one postings list; advance_to gallops ahead instead of stepping one by one."],
+    ["varint.cpp", 75, "LEB128 varint: small numbers take one byte."],
+    ["postings_codec.cpp", 89, "Delta-encodes doc ids and positions, then varints them. Postings shrink to about 20% of fixed width."],
+    ["index_file.cpp", 270, "Versioned index file with a CRC-32 per section and a corpus fingerprint, so corrupt or stale files are rejected."],
+    ["partition.cpp", 29, "Round-robin sharding: shard = id mod N, local = id div N, global = local times N plus shard."]]},
+  { layer: "Text", id: "text", desc: "Turns raw UTF-8 text into index terms.", files: [
+    ["tokenizer.cpp", 79, "Splits UTF-8 text into lowercase tokens and records each token's position."],
+    ["ascii_fold.cpp", 134, "Folds accents so \"Ødegaard\" matches \"odegaard\"."],
+    ["stopwords.cpp", 30, "Drops words like \"the\" and \"at\" but keeps their position gaps, so phrases stay exact."],
+    ["stemmer.cpp", 39, "Harman S-stemmer: \"devils\" becomes \"devil\". Light on purpose, so names are left alone."],
+    ["analyzer.cpp", 29, "Runs the pipeline above. Indexing and querying use the same analyzer."]]},
+  { layer: "Data", id: "corpus", desc: "Documents and the TSV corpus files.", files: [
+    ["document.cpp", 41, "A document: id, title, kind (club, match, ...) and body text."],
+    ["corpus.cpp", 243, "Loads and writes TSV corpora; several files can be combined."]]},
+  { layer: "Data", id: "eval", desc: "Relevance metrics.", files: [
+    ["metrics.cpp", 97, "Precision@k, recall@k and reciprocal rank."]]},
+  { layer: "Data", id: "common", desc: "Shared types, error type, checksums.", files: [
+    ["crc32.cpp", 40, "CRC-32 for the index file."],
+    ["error.cpp", 21, "Error type returned instead of throwing on bad input."],
+    ["types.hpp", 12, "DocId and friends."]]}
+];
+
+const H = s => s; // marker for preformatted, already-escaped text
+const SINGLE = [
+  { phase: "Build the index", title: "Read the corpus", mods: ["corpus", "apps"], files: ["corpus.cpp", "document.cpp", "gaffer/main.cpp"],
+    text: "The CLI loads one or more TSV files. Each line is a document: a club page, a match report or a season summary. The default corpus is the 2025-26 season (938 docs). Adding the 1992-2025 history file gives 13,724 docs.",
+    why: "<b>Why TSV:</b> the corpus generator (Python, stdlib only) writes plain TSV, so the C++ side needs no parser library and the data is easy to diff in review.",
+    out: H(`<span class="dim">kind   title</span>
+club   Manchester United
+match  Manchester United 2-1 Crystal Palace (1 Mar 2026)
+match  Arsenal 2-3 Manchester United (25 Jan 2026)`) },
+  { phase: "Build the index", title: "Analyse the text", mods: ["text"], files: ["tokenizer.cpp", "ascii_fold.cpp", "stopwords.cpp", "stemmer.cpp", "analyzer.cpp"],
+    text: "Text goes through the tokenizer, accent folding, stopword removal and a light stemmer. Each surviving token keeps its position. Queries go through exactly the same analyzer, so query terms match index terms.",
+    why: "<b>Why keep stopword gaps:</b> \"late winner at anfield\" must not match \"late winner anfield\". Dropping \"at\" but keeping its position slot keeps phrase queries exact.",
+    out: H(`"Red Devils comeback"
+  tokenize   red devils comeback
+  stem       red <span class="hl">devil</span> comeback`) },
+  { phase: "Build the index", title: "Build the inverted index", mods: ["index"], files: ["inverted_index.cpp"],
+    text: "For every term the index stores a postings list: which documents contain it, how often, and at which positions. It also stores each document's length for BM25.",
+    why: "<b>Why parallel arrays:</b> doc ids, frequencies and positions sit in separate arrays, so a scan that only needs doc ids touches only that array. That is cache-friendly.",
+    out: H(`term       df  (documents containing it, 938-doc corpus)
+red       597
+devil       1
+comeback   46`) },
+  { phase: "Build the index", title: "Compress and save", mods: ["index", "common"], files: ["varint.cpp", "postings_codec.cpp", "index_file.cpp", "crc32.cpp"],
+    text: "Doc ids and positions are stored as gaps between neighbours, then varint-encoded. The index is written to one versioned file with a CRC-32 per section and a fingerprint of the corpus it came from.",
+    why: "<b>Why deltas:</b> sorted ids like 1000, 1003, 1010 become 1000, 3, 7. Small numbers fit in one byte. Measured: 7,153,148 B down to 1,433,730 B (20.0%) on 13,724 docs.",
+    out: H(`gaffer index --out pl.gaffer
+gaffer search --index pl.gaffer "palmer hat-trick"
+<span class="dim">corrupt or truncated file  -> rejected (CRC)
+file from another corpus    -> rejected (fingerprint)</span>`) },
+  { phase: "Answer a query", title: "Parse the query", mods: ["query"], files: ["query_parser.cpp", "phrase.cpp"],
+    text: "Quoted text becomes a required phrase. Bare words become optional terms: a document needs at least one of them, and more matches rank higher.",
+    why: "<b>Why OR plus ranking:</b> users type a few words, not boolean logic. BM25 rewards documents that match more of them.",
+    out: H(`red devils comeback       -> 3 optional terms
+"north london derby"      -> 1 required phrase
+                             2 of 2 docs match, both Arsenal v Spurs`) },
+  { phase: "Answer a query", title: "Expand nicknames", mods: ["query"], files: ["nicknames.cpp"],
+    text: "Known nicknames add the club's real name as extra terms at 70% weight. \"Red devils\" pulls in manchester and united.",
+    why: "<b>Why it matters:</b> measured on 20 labelled queries, recall@10 went from 0.670 to 0.895 and MRR from 0.628 to 0.718 with expansion on.",
+    out: H(`Kick-off: red (df 597), devil (df 1), comeback (df 46),
+  <span class="hl">manchester</span> (df 197, from "red devils" x0.7),
+  <span class="hl">united</span> (df 375, from "red devils" x0.7)`) },
+  { phase: "Answer a query", title: "Walk the postings", mods: ["index", "query"], files: ["posting_cursor.cpp", "searcher.cpp"],
+    text: "The searcher opens one cursor per term and walks all of them together, one document at a time, always jumping to the smallest doc id any cursor points at.",
+    why: "<b>Why document-at-a-time:</b> each document is scored once, fully, then discarded. Memory stays at k results, not one score per matching doc. advance_to gallops, so skipping is cheap.",
+    out: H(`cursors: red | devil | comeback | manchester | united
+-> <span class="hl">770</span> matching documents visited`) },
+  { phase: "Answer a query", title: "Score with BM25", mods: ["ranking"], files: ["bm25.cpp", "explanation.hpp"],
+    text: "Each matching term adds a score from its frequency in the document, its rarity across the corpus (idf) and the document's length. --var prints the breakdown.",
+    why: "<b>Why rare terms dominate:</b> \"devil\" appears in 1 document, so its idf is 6.44 and it alone is worth 6.2 points. \"red\" is in 597 documents, idf 0.45.",
+    out: H(`VAR review: Manchester United (doc length 111, average 101.9)
+  red                    tf 2  idf 0.45  x1.0  ->  0.606
+  devil                  tf 1  idf 6.44  x1.0  ->  <span class="hl">6.211</span>
+  comeback               not in this document
+  manchester (nickname)  tf 6  idf 1.56  x0.7  ->  1.979
+  united (nickname)      tf 4  idf 0.92  x0.7  ->  1.069
+                                           total    9.865`) },
+  { phase: "Answer a query", title: "Keep the top k", mods: ["query"], files: ["top_k.cpp"],
+    text: "A min-heap of size k holds the best results so far. A new document only goes in if it beats the weakest one at the top of the heap.",
+    why: "<b>Why a min-heap:</b> O(n log k) instead of sorting all n matches. Ties are broken by doc id, so the same query always gives the same order.",
+    out: H(`1. Manchester United                                 9.865
+2. Manchester United 2-1 Crystal Palace (1 Mar 2026)  6.629
+3. Arsenal 2-3 Manchester United (25 Jan 2026)        6.337`) },
+  { phase: "Answer a query", title: "Build snippets", mods: ["snippet", "apps"], files: ["snippet.cpp", "gaffer/main.cpp"],
+    text: "For each result, the snippet builder picks the text window that covers the most query terms and bolds them. Then the CLI prints the page.",
+    why: "<b>Measured cost:</b> snippets take about 38 µs each, more than the search itself (p50 about 33 µs on 13,724 docs). That shows up again in the cluster.",
+    out: H(`2. Manchester United 2-1 Crystal Palace (1 Mar 2026)      6.629  match
+   ... <span class="hl">**Manchester** **United**</span> came from a goal down to win,
+   a <span class="hl">**comeback**</span>. Crystal Palace led ...
+
+Full-time: 3 of 770 matching documents in 0.14 ms`) }
+];
+
+const CLUSTER = [
+  { phase: "Before startup", title: "Partition the corpus", mods: ["index", "apps"], files: ["partition.cpp", "gaffer/main.cpp"],
+    text: "gaffer partition splits the 13,724 docs round-robin into N shard files. Steps 1 to 4 of single-node mode then run once per shard.",
+    why: "<b>Why round-robin:</b> every shard gets a fair mix of old and new seasons, and the global doc id can be recomputed from (shard, local id) with no lookup table.",
+    out: H(`gaffer partition --shards 4 --out-dir shards/ \\
+  --corpus data/corpus/pl-history.tsv --corpus data/corpus/pl-2025-26.tsv
+
+shard  = id mod 4      local = id div 4
+global = local * 4 + shard`) },
+  { phase: "Startup", title: "Start shards and broker", mods: ["server", "net", "apps"], files: ["tcp_server.cpp", "shard_server.cpp", "socket.cpp", "gaffer-shard/main.cpp", "gaffer-broker/main.cpp"],
+    text: "Each gaffer-shard serves its slice over TCP. The servers are reactors: one poll() thread watches every connection and hands ready requests to a worker pool.",
+    why: "<b>Why a reactor:</b> the first version gave each connection its own thread. Idle pooled connections from the broker held every thread, and a concurrency test caught new clients starving.",
+    out: H(`deploy/local-cluster.sh 4 7000      <span class="dim"># or: docker compose up</span>
+gaffer-shard 0..3 on :7001..7004
+gaffer-broker on :7000`) },
+  { phase: "Startup", title: "Gather global statistics", mods: ["server"], files: ["broker.cpp", "global_stats.cpp"],
+    text: "At startup the broker asks every shard for its document count, total length and per-term df, and adds them up.",
+    why: "<b>Why global stats:</b> with local stats, a term that is rare on one shard looks important there, and the same document scores differently depending on where it lives. With global stats, sharded scores equal single-node scores exactly.",
+    out: H(`StatsRequest  -> each shard
+StatsResponse <- N, total length, df per term
+merge_stats   -> one corpus-wide view`) },
+  { phase: "Per query", title: "Plan and fan out", mods: ["query", "server", "net"], files: ["searcher.cpp", "broker.cpp", "messages.cpp", "framing.cpp", "rpc.cpp"],
+    text: "The broker parses and expands the query once, looks up the global df of just those terms, and sends the query plus those numbers to every shard in parallel. All shards share one deadline (200 ms by default).",
+    why: "<b>Why send df per query:</b> shards stay stateless. A restarted shard needs no sync step, and the message carries only the handful of terms the query uses.",
+    out: H(`ShardSearchRequest {
+  query, k, global N, global average length,
+  df of red, devil, comeback, manchester, united
+}  <span class="dim">(only this query's terms)</span>
+length-prefixed frame, 4 MiB cap, protocol v1`) },
+  { phase: "Per query", title: "Shards search in parallel", mods: ["index", "query", "ranking", "snippet"], files: ["searcher.cpp", "posting_cursor.cpp", "bm25.cpp", "top_k.cpp", "snippet.cpp"],
+    text: "Each shard runs single-node steps 7 to 10 on its own slice, scoring with the global numbers it was sent, and returns its top k with snippets.",
+    why: "<b>Measured trade-off:</b> each shard builds snippets for its own top k, so 4 shards build 4 times as many snippets as needed. Ranking first and fetching snippets only for the final k is the documented next step.",
+    out: H(`shard 0: top 3   shard 1: top 3
+shard 2: top 3   shard 3: top 3`) },
+  { phase: "Per query", title: "Merge and report", mods: ["server", "apps"], files: ["broker.cpp", "gaffer/main.cpp"],
+    text: "The broker merges the shard lists with a k-way heap and maps local ids back to global ids. A shard that misses the deadline or fails is listed in missing_shards and the answer is flagged partial.",
+    why: "<b>Tested:</b> sharded results are bit-identical to single node for 1 to 4 shards. Fault-injection tests cover slow, dead, restarted, silent and garbage-speaking shards.",
+    out: H(`Ask the Gaffer (cluster): "red devils comeback"
+  1. Manchester United                                  12.000  shard 1
+  2. Manchester City 1-2 Manchester United (15 Dec 2024) 8.079  shard 1
+  3. Manchester City 2-3 Manchester United (7 Apr 2018)  8.014  shard 0
+Full-time: 3 of 5960 matching documents from 4 shards
+<span class="dim">(13,724-doc corpus, so scores differ from single-node mode's 938)</span>
+
+With shard 2 stopped:
+<span class="hl">PARTIAL RESULTS: 3 of 4 shards answered</span>`) }
+];
+
+let mode = "single", idx = 0;
+const $ = id => document.getElementById(id);
+const steps = () => mode === "single" ? SINGLE : CLUSTER;
+const fileIndex = {};
+MODULES.forEach(m => m.files.forEach(([f, n, d]) => fileIndex[f] = { mod: m.id, n, d }));
+
+function renderStats() {
+  const files = Object.keys(fileIndex).length;
+  $("stats").innerHTML = [
+    [`${files}`, "files mapped"], ["6,525", "lines of C++ in src/ and apps/"],
+    ["225", "C++ tests"], ["13,724", "docs, 1992-2026"], ["20.0%", "index size after compression"]
+  ].map(([b, t]) => `<span class="stat"><b>${b}</b> ${t}</span>`).join("");
+}
+
+function renderSteps() {
+  let html = "", last = "";
+  steps().forEach((s, i) => {
+    if (s.phase !== last) { html += `<div class="phase">${s.phase}</div>`; last = s.phase; }
+    html += `<button class="step" data-i="${i}" ${i === idx ? 'aria-current="step"' : ""}><span class="n">${i + 1}</span><span>${s.title}</span></button>`;
+  });
+  $("steps").innerHTML = html;
+  $("steps").querySelectorAll(".step").forEach(b => b.onclick = () => go(+b.dataset.i));
+}
+
+function renderDetail() {
+  const s = steps()[idx], all = steps();
+  $("detail").innerHTML = `
+    <div class="kicker">${mode === "single" ? "Single node" : "Cluster"} · step ${idx + 1} of ${all.length} · ${s.phase}</div>
+    <h3>${s.title}</h3>
+    <div class="files">${s.files.map(f => `<span class="chip">${f}</span>`).join("")}</div>
+    <p>${s.text}</p>
+    <p class="why">${s.why}</p>
+    <pre>${s.out}</pre>
+    <div class="nav">
+      <button id="prev" ${idx === 0 ? "disabled" : ""}>Previous step</button>
+      <button id="next" ${idx === all.length - 1 ? "disabled" : ""}>Next step</button>
+    </div>`;
+  $("prev").onclick = () => go(idx - 1);
+  $("next").onclick = () => go(idx + 1);
+}
+
+function renderMap() {
+  const s = steps()[idx];
+  const layers = [...new Set(MODULES.map(m => m.layer))];
+  $("map").innerHTML = layers.map(L => `
+    <div class="layer"><div class="layer-name">${L}</div><div class="mods">
+      ${MODULES.filter(m => m.layer === L).map(m => `
+        <div class="mod ${s.mods.includes(m.id) ? "on" : ""}">
+          <div class="mod-top"><span class="mod-name">${m.id === "apps" ? "apps/" : "src/" + m.id + "/"}</span>
+            <span class="mod-lines">${m.files.reduce((a, f) => a + f[1], 0)} lines</span></div>
+          <p class="mod-desc">${m.desc}</p>
+          <div class="file-list">${m.files.map(([f]) => `<button class="file ${s.files.includes(f) ? "on" : ""}" data-f="${f}">${f.replace("/main.cpp", "")}</button>`).join("")}</div>
+        </div>`).join("")}
+    </div></div>`).join("");
+  $("map").querySelectorAll(".file").forEach(b => b.onclick = () => {
+    const f = fileIndex[b.dataset.f];
+    const path = (f.mod === "apps" ? "apps/" : "src/" + f.mod + "/") + b.dataset.f;
+    $("file-info").innerHTML = `<code>${path}</code> · ${f.n} lines<br>${f.d}`;
+  });
+}
+
+function go(i) { idx = Math.max(0, Math.min(steps().length - 1, i)); renderSteps(); renderDetail(); renderMap(); }
+function setMode(m) {
+  mode = m; idx = 0;
+  $("m-single").setAttribute("aria-pressed", m === "single");
+  $("m-cluster").setAttribute("aria-pressed", m === "cluster");
+  go(0);
+}
+$("m-single").onclick = () => setMode("single");
+$("m-cluster").onclick = () => setMode("cluster");
+document.addEventListener("keydown", e => {
+  if (e.target.closest("button") && e.key === "Enter") return;
+  if (e.key === "ArrowDown" || e.key === "ArrowRight") { go(idx + 1); e.preventDefault(); }
+  if (e.key === "ArrowUp" || e.key === "ArrowLeft") { go(idx - 1); e.preventDefault(); }
+});
+renderStats(); go(0);
+</script>
+</body>
+</html>
